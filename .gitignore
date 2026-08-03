@@ -1,0 +1,8 @@
+# Installer gehoeren nicht ins Repo. Der Git-Installer lag hier nur
+# zum Einrichten herum (65 MB).
+*.exe
+*.msi
+
+# Windows-Beiwerk
+Thumbs.db
+desktop.ini

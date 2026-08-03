@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranking Studio — Video Generator</title>
+<style>
+:root{
+  --bg:#05070f; --panel:#0c1322; --panel2:#070c18;
+  --line:#1a2440; --line2:#243154;
+  --txt:#e8eef9; --muted:#8b9bba; --dim:#5d6c8a;
+  --accent:#34d399; --accent2:#22d3ee;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:radial-gradient(1200px 700px at 20% -10%, #10203a 0%, var(--bg) 60%);
+  color:var(--txt);
+  font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+  min-height:100vh; font-size:14px;
+}
+button,input,select,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+
+/* ---------- Header ---------- */
+header{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 22px;
+  background:rgba(8,13,25,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#04121a;font-weight:900;font-size:17px;font-style:italic;
+  box-shadow:0 6px 20px rgba(52,211,153,.25);
+}
+.brand h1{font-size:16px;font-weight:800;letter-spacing:.04em}
+.brand span{display:block;font-size:11px;color:var(--dim);font-weight:500;letter-spacing:.02em}
+.tabs{display:flex;gap:8px}
+.tab{padding:8px 15px;border-radius:10px;font-size:13px;font-weight:600;background:#131c31;color:var(--muted);transition:.15s}
+.tab:hover{background:#1a2540;color:var(--txt)}
+.tab.on{background:var(--accent);color:#04121a}
+.hbtns{display:flex;gap:8px}
+.ghost{padding:8px 13px;border-radius:10px;font-size:12px;font-weight:600;background:#131c31;color:var(--muted);border:1px solid var(--line)}
+.ghost:hover{border-color:var(--line2);color:var(--txt)}
+
+/* ---------- Layout ---------- */
+main{max-width:1560px;margin:0 auto;padding:22px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:22px;align-items:start}
+@media(max-width:1100px){main{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:18px}
+.right{position:sticky;top:86px}
+
+/* ---------- Boxes ---------- */
+.box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 18px 40px -24px #000}
+.box>h2{
+  display:flex;align-items:center;gap:9px;
+  font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);
+  padding-bottom:11px;margin-bottom:14px;border-bottom:1px solid var(--line);
+}
+.box>h2 .n{
+  width:20px;height:20px;border-radius:6px;background:rgba(52,211,153,.14);
+  border:1px solid rgba(52,211,153,.3);display:grid;place-items:center;font-size:10px;
+}
+.box>h2 .sp{margin-left:auto;display:flex;gap:7px;align-items:center}
+
+/* ---------- Form atoms ---------- */
+label.f{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.inp,textarea.inp,select.inp{
+  width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+  padding:9px 11px;font-size:13px;transition:.15s;outline:none;
+}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(52,211,153,.12)}
+.inp::placeholder{color:#455473}
+textarea.inp{resize:vertical;font-weight:700;line-height:1.35}
+select.inp{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row{display:flex;align-items:center;gap:10px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.hint{font-size:11px;color:var(--dim);line-height:1.5}
+
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:3px;background:#1c2740;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 0 3px rgba(52,211,153,.18)}
+.rangeRow{display:flex;align-items:center;gap:10px}
+.rangeRow .val{font-size:11px;font-family:ui-monospace,monospace;color:var(--accent);min-width:44px;text-align:right}
+
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;padding:6px 8px;border-radius:7px;font-size:11.5px;font-weight:600;color:var(--muted);transition:.15s}
+.seg button.on{background:var(--accent);color:#04121a}
+.seg button:not(.on):hover{background:#141d33;color:var(--txt)}
+
+/* ---------- Colors ---------- */
+.swatches{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sw{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);transition:.15s}
+.sw:hover{transform:scale(1.12)}
+.sw.on{border-color:#fff;box-shadow:0 0 0 3px rgba(52,211,153,.35)}
+input[type=color]{width:30px;height:26px;padding:0;background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer}
+
+.chips{display:flex;flex-wrap:wrap;gap:5px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:44px}
+.chip{padding:4px 9px;border-radius:7px;border:1px solid var(--line2);background:#111a2c;font-weight:800;font-size:13px;transition:.12s}
+.chip:hover{border-color:var(--accent);transform:translateY(-1px)}
+.chips .br{flex-basis:100%;height:0}
+
+/* ---------- Clips ---------- */
+.clip{
+  display:grid;grid-template-columns:38px 1fr auto;gap:11px;align-items:center;
+  background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;transition:.15s;
+}
+.clip.live{border-color:rgba(52,211,153,.55);background:#0d1a26}
+.clip.drop{border-color:var(--accent2);background:#0b1c26}
+.badge{
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  font-weight:900;font-size:15px;font-style:italic;background:#141e33;border:1px solid var(--line2);
+}
+.clipMain{display:flex;flex-direction:column;gap:7px;min-width:0}
+.clipTop{display:flex;gap:8px;align-items:center}
+.clipTop .inp{padding:7px 10px;font-size:12.5px}
+.thumb{width:44px;height:44px;border-radius:9px;object-fit:cover;background:#0b1020;border:1px solid var(--line);flex-shrink:0}
+.thumbEmpty{width:44px;height:44px;border-radius:9px;background:#0b1020;border:1px dashed var(--line2);display:grid;place-items:center;color:var(--dim);font-size:16px;flex-shrink:0}
+.fileRow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);min-width:0}
+.fileRow .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.mini{padding:4px 9px;border-radius:7px;font-size:11px;font-weight:600;background:#16203a;border:1px solid var(--line2);color:var(--muted)}
+.mini:hover{color:var(--txt);border-color:var(--accent)}
+.mini.danger:hover{border-color:#f87171;color:#f87171}
+.trim{display:flex;align-items:center;gap:6px}
+.trim input{width:58px;background:#0b1020;border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-size:11px;font-family:ui-monospace,monospace;text-align:center;outline:none}
+.trim input:focus{border-color:var(--accent)}
+.trim span{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.dropzone{
+  margin-top:11px;border:1.5px dashed var(--line2);border-radius:12px;padding:16px;text-align:center;
+  font-size:12px;color:var(--dim);transition:.15s;cursor:pointer;
+}
+.dropzone:hover,.dropzone.drop{border-color:var(--accent);color:var(--accent);background:rgba(52,211,153,.05)}
+.urlRow{display:flex;gap:6px;align-items:center}
+.urlRow input{flex:1;min-width:0;background:#0b1020;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11.5px;outline:none}
+.urlRow input:focus{border-color:var(--accent2)}
+.prog{height:4px;border-radius:3px;background:#131c31;overflow:hidden}
+.prog>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+.jobmsg{font-size:10.5px;color:var(--dim);min-height:13px}
+.helperBox{margin-top:11px;display:flex;gap:12px;align-items:center;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.24);border-radius:12px;padding:11px 13px}
+.helperBox b{color:#f59e0b;font-size:12px}
+.helperBox span{display:block;font-size:11px;color:var(--muted);line-height:1.55;margin-top:3px}
+.helperBox button{white-space:nowrap;flex-shrink:0}
+.linkBulk{display:flex;gap:8px;align-items:stretch;margin-top:11px}
+.linkBulk textarea{flex:1;font-size:11.5px;font-weight:400;padding:8px 10px}
+.linkBulk button{white-space:nowrap;padding:8px 14px}
+
+/* Helfer-Status */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid;cursor:default}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.pill.on{color:var(--accent);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.1)}
+.pill.warn{color:#f59e0b;border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.08)}
+.pill.off{color:#7b8bab;border-color:var(--line2);background:#111a2c}
+
+/* ---------- Order ---------- */
+.ord{
+  display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--line);font-size:12.5px;cursor:grab;transition:.15s;
+}
+.ord:active{cursor:grabbing}
+.ord.live{border-color:rgba(52,211,153,.5);background:#0d1a26}
+.ord.dragging{opacity:.45;border-style:dashed}
+.ord .pos{font-family:ui-monospace,monospace;color:var(--dim);font-size:11px;width:20px}
+.ord .rk{padding:2px 8px;border-radius:6px;background:#16203a;font-weight:900;font-style:italic;font-size:12px}
+.ord .lb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.ord .grip{color:var(--dim);letter-spacing:-2px}
+.tag{padding:2px 7px;border-radius:5px;background:var(--accent);color:#04121a;font-size:9px;font-weight:900;letter-spacing:.08em}
+
+/* ---------- Preview ---------- */
+.pvWrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.pvLabel{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+  background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);padding:4px 12px;border-radius:99px}
+.phone{position:relative;width:min(326px,100%);border-radius:20px;overflow:hidden;border:5px solid #131c31;box-shadow:0 30px 60px -20px #000,0 0 0 1px #223056}
+#stage{display:block;width:100%;height:auto;background:#000}
+.transport{
+  width:min(326px,100%);display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:9px 12px;
+}
+.tbtn{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:#16203a;color:var(--muted);font-size:12px}
+.tbtn:hover{color:var(--txt);background:#1d2947}
+.tbtn.main{background:var(--accent);color:#04121a;font-size:13px}
+.time{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);margin-left:auto}
+.scrub{width:min(326px,100%);height:6px;border-radius:4px;background:#131c31;position:relative;cursor:pointer;overflow:hidden}
+.scrub .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0}
+.scrub .tick{position:absolute;top:0;bottom:0;width:1px;background:#05070f}
+.exportBtn{
+  width:min(326px,100%);padding:14px;border-radius:14px;font-weight:900;font-size:14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121a;
+  box-shadow:0 14px 30px -12px rgba(52,211,153,.55);transition:.15s;
+}
+.exportBtn:hover{filter:brightness(1.07)}
+.exportBtn:active{transform:scale(.985)}
+.exportBtn:disabled{opacity:.55;cursor:not-allowed}
+.exportNote{width:min(326px,100%);font-size:10.5px;color:var(--dim);text-align:center;line-height:1.5}
+
+/* ---------- Guide ---------- */
+#guide{max-width:1000px;margin:0 auto;padding:26px}
+#guide h2{font-size:22px;font-weight:800;margin-bottom:6px}
+#guide .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:20px}
+#guide .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+#guide .card h3{color:var(--accent);font-size:13px;font-weight:800;margin-bottom:7px}
+#guide .card p{font-size:12px;color:var(--muted);line-height:1.65}
+#guide ol{margin:18px 0 0 18px;font-size:13px;color:var(--muted);line-height:1.9}
+kbd{background:#16203a;border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:11px;font-family:ui-monospace,monospace;color:var(--txt)}
+/* ---------- Schmale Fenster ---------- */
+@media(max-width:820px){
+  header{flex-wrap:wrap;padding:12px 14px;gap:10px}
+  .brand{flex:1;min-width:0}
+  .brand h1{font-size:14px}
+  .tabs{order:3;width:100%}
+  .tabs .tab{flex:1;text-align:center}
+  .hbtns{flex-wrap:wrap;justify-content:flex-end}
+  main{padding:14px;gap:14px}
+  .right{position:static}
+  .clip{grid-template-columns:34px 1fr;grid-template-areas:"badge main" "act act";gap:9px}
+  .clip>.badge{grid-area:badge}
+  .clip>.clipMain{grid-area:main}
+  .clip>div:last-child{grid-area:act;flex-direction:row!important;justify-content:flex-end}
+  .linkBulk{flex-direction:column}
+  .fileRow{flex-wrap:wrap}
+}
+@media(max-width:620px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .col,.box,.clipMain{min-width:0}
+  .box>h2 .sp{flex-wrap:wrap;justify-content:flex-end}
+}
+#vidPool{position:fixed;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;left:-9999px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#16203a;border:1px solid var(--line2);
+  padding:10px 18px;border-radius:11px;font-size:12.5px;z-index:99;opacity:0;transition:.25s;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,-6px)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">R</div>
+    <div>
+      <h1>RANKING STUDIO</h1>
+      <span>Top-Listen Videos im 9:16 Format</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="studio">Studio</button>
+    <button class="tab" data-tab="guide">Anleitung</button>
+  </div>
+  <div class="hbtns">
+    <span class="pill off" id="helperPill"><span class="dot"></span>Helfer …</span>
+    <button class="ghost" id="btnSave">Projekt sichern</button>
+    <button class="ghost" id="btnLoad">Laden</button>
+    <button class="ghost" id="btnReset">Reset</button>
+  </div>
+</header>
+
+<main id="studio">
+  <!-- ============ LINKE SPALTE ============ -->
+  <div class="col">
+
+    <!-- BOX 1: TITEL -->
+    <div class="box">
+      <h2><span class="n">1</span> Titel</h2>
+      <div class="stack">
+        <div>
+          <label class="f">Titeltext (Zeilenumbruch = neue Zeile)</label>
+          <textarea class="inp" id="title" rows="2" placeholder="TOP 5 TORE&#10;DES JAHRES"></textarea>
+        </div>
+
+        <div class="row" style="justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 11px">
+          <div class="row">
+            <span style="font-size:11px;color:var(--muted);font-weight:600">Farbe:</span>
+            <input type="color" id="paint" value="#34d399">
+            <div class="swatches" id="swatches"></div>
+          </div>
+          <span class="hint">Wort anklicken = einfärben</span>
+        </div>
+
+        <div>
+          <label class="f">Wörter einfärben</label>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <div class="grid3">
+          <div>
+            <label class="f">Größe</label>
+            <div class="rangeRow"><input type="range" id="titleSize" min="40" max="130" value="82"><span class="val" id="titleSizeV">82</span></div>
+          </div>
+          <div>
+            <label class="f">Position</label>
+            <select class="inp" id="titlePos"><option value="top">Oben</option><option value="bottom">Unten</option></select>
+          </div>
+          <div>
+            <label class="f">Hintergrund</label>
+            <select class="inp" id="titleBg">
+              <option value="solid">Schwarzer Balken</option>
+              <option value="fade">Weicher Verlauf</option>
+              <option value="none">Nur Text</option>
+            </select>
+          </div>
+        </div>
+        <label class="chk"><input type="checkbox" id="titleUpper" checked> Titel in GROSSBUCHSTABEN</label>
+      </div>
+    </div>
+
+    <!-- BOX 2: CLIPS -->
+    <div class="box">
+      <h2><span class="n">2</span> Clips
+        <span class="sp">
+          <span class="hint" id="clipCount"></span>
+          <select class="inp" id="rankCount" style="width:auto;padding:5px 26px 5px 9px;font-size:11px">
+            <option value="3">Top 3</option><option value="4">Top 4</option><option value="5" selected>Top 5</option>
+            <option value="6">Top 6</option><option value="7">Top 7</option><option value="8">Top 8</option>
+            <option value="9">Top 9</option><option value="10">Top 10</option>
+          </select>
+        </span>
+      </h2>
+      <div class="stack" id="clipList"></div>
+      <div class="dropzone" id="bulkDrop">
+        Videodateien hierher ziehen oder klicken — füllt die freien Plätze der Reihe nach
+      </div>
+      <div class="linkBulk">
+        <textarea class="inp" id="bulkLinkInput" rows="2" placeholder="Mehrere Links auf einmal — einer pro Zeile"></textarea>
+        <button class="mini" id="bulkLinkGo">Alle laden</button>
+      </div>
+      <div class="helperBox" id="helperBox" hidden>
+        <div>
+          <b>Link-Import ist gerade nicht aktiv</b>
+          <span>Ein Browser darf selbst keine Programme starten — der Helfer dafür muss außerhalb laufen. Er steckt in dieser Datei mit drin: einmal speichern, dann per Doppelklick starten. Danach genügt es, diese Seite neu zu laden.</span>
+        </div>
+        <button class="mini" id="btnExtract">Helfer speichern</button>
+      </div>
+    </div>
+
+    <!-- BOX 3: REIHENFOLGE -->
+    <div class="box">
+      <h2><span class="n">3</span> Reihenfolge
+        <span class="sp">
+          <button class="mini" data-preset="countdown">Countdown</button>
+          <button class="mini" data-preset="up">Aufsteigend</button>
+          <button class="mini" data-preset="random">Zufall</button>
+        </span>
+      </h2>
+      <div class="stack" id="orderList"></div>
+      <p class="hint" style="margin-top:10px">Zeilen ziehen zum Umsortieren. Die Reihenfolge bestimmt, wann welcher Platz aufgedeckt wird.</p>
+    </div>
+
+    <!-- BOX 4: DESIGN & TIMING -->
+    <div class="box">
+      <h2><span class="n">4</span> Design &amp; Timing</h2>
+      <div class="stack">
+        <div class="grid2">
+          <div>
+            <label class="f">Clip-Länge (Standard)</label>
+            <div class="rangeRow"><input type="range" id="clipLen" min="2" max="20" step="0.5" value="6"><span class="val" id="clipLenV">6.0s</span></div>
+          </div>
+          <div>
+            <label class="f">&nbsp;</label>
+            <button class="mini" id="applyLen" style="width:100%;padding:9px">Auf alle Clips anwenden</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label class="f">Rangliste sortiert</label>
+            <div class="seg" id="listOrder">
+              <button data-v="asc" class="on">1 oben</button>
+              <button data-v="desc">Höchster oben</button>
+            </div>
+          </div>
+          <div>
+            <label class="f">Video-Anpassung</label>
+            <div class="seg" id="fitMode">
+              <button data-v="cover" class="on">Füllen</button>
+              <button data-v="blur">Unscharfer Rand</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label class="f">Akzentfarbe</label>
+            <div class="row"><input type="color" id="accent" value="#34d399"><span class="hint">Aktiver Platz &amp; Fortschritt</span></div>
+          </div>
+          <div>
+            <label class="f">Wasserzeichen (optional)</label>
+            <input class="inp" id="watermark" placeholder="@deinkanal" style="padding:7px 10px;font-size:12px">
+          </div>
+        </div>
+
+        <div class="grid2">
+          <label class="chk"><input type="checkbox" id="revealNames" checked> Namen erst beim Aufdecken zeigen</label>
+          <label class="chk"><input type="checkbox" id="hideFuture"> Kommende Plätze ausblenden</label>
+        </div>
+
+        <div style="border-top:1px solid var(--line);padding-top:12px">
+          <label class="f">Musik (optional)</label>
+          <div class="row">
+            <button class="mini" id="musicPick">Audio wählen</button>
+            <span class="hint" id="musicName" style="flex:1">Keine Datei</span>
+            <button class="mini danger" id="musicClear">×</button>
+          </div>
+          <div class="grid2" style="margin-top:10px">
+            <div>
+              <label class="f">Clip-Ton</label>
+              <div class="rangeRow"><input type="range" id="volVideo" min="0" max="100" value="100"><span class="val" id="volVideoV">100</span></div>
+            </div>
+            <div>
+              <label class="f">Musik</label>
+              <div class="rangeRow"><input type="range" id="volMusic" min="0" max="100" value="35"><span class="val" id="volMusicV">35</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RECHTE SPALTE ============ -->
+  <div class="col right">
+    <div class="pvWrap">
+      <span class="pvLabel">Live Vorschau · 1080×1920</span>
+      <div class="phone"><canvas id="stage" width="1080" height="1920"></canvas></div>
+
+      <div class="scrub" id="scrub"><div class="fill" id="scrubFill"></div></div>
+
+      <div class="transport">
+        <button class="tbtn" id="btnPrev">◀◀</button>
+        <button class="tbtn main" id="btnPlay">▶</button>
+        <button class="tbtn" id="btnNext">▶▶</button>
+        <button class="tbtn" id="btnStop">■</button>
+        <span class="time" id="time">0:00 / 0:30</span>
+      </div>
+
+      <button class="exportBtn" id="btnExport">Video exportieren</button>
+      <p class="exportNote" id="exportNote">Rendert in Echtzeit direkt im Browser — Fenster geöffnet lassen.</p>
+    </div>
+  </div>
+</main>
+
+<section id="guide" hidden>
+  <h2>So funktioniert das Tool</h2>
+  <p class="hint">Alles läuft lokal im Browser. Deine Videos werden nirgendwo hochgeladen.</p>
+  <div class="cards">
+    <div class="card"><h3>1 · Titel &amp; Farben</h3><p>Titel eintippen, einzelne Wörter anklicken und mit der aktiven Farbe hervorheben. Der Text wird mit schwarzer Kontur direkt ins Video gerendert.</p></div>
+    <div class="card"><h3>2 · Clips laden</h3><p>Entweder Videodateien per Drag &amp; Drop auf die Plätze ziehen — oder Links einfügen, wenn der lokale Helfer läuft. Pro Clip lassen sich Startpunkt und Länge in Sekunden setzen.</p></div>
+    <div class="card"><h3>3 · Reihenfolge</h3><p>Countdown (Platz N zuerst) ist Standard für Ranking-Videos. Per Drag &amp; Drop beliebig umsortierbar.</p></div>
+    <div class="card"><h3>4 · Export</h3><p>Der Canvas wird in Echtzeit mit <code>MediaRecorder</code> aufgezeichnet — inklusive Clip-Ton und Musik. Ausgabe als MP4 oder WebM, je nach Browser.</p></div>
+  </div>
+  <h2 style="margin-top:30px;font-size:17px">Link-Import einrichten</h2>
+  <p class="hint">Ein Browser kann YouTube-, TikTok- oder Instagram-Links nicht selbst laden: dahinter steckt keine Videodatei, sondern signierte Streamfragmente ohne CORS-Freigabe. Und starten darf eine Webseite ohnehin kein Programm. Der Helfer erledigt das deshalb außerhalb des Browsers und reicht die fertige Datei durch. <b>Sein kompletter Quelltext steckt in dieser HTML-Datei</b> — es gibt nichts weiter herunterzuladen.</p>
+  <ol>
+    <li>In Box&nbsp;2 auf <b>Helfer speichern</b> klicken. Es werden zwei Dateien gespeichert: <code>RankingHelper.ps1</code> und <code>Ranking-Studio-starten.cmd</code>. Beide in denselben Ordner legen — welcher, ist egal.</li>
+    <li><b>Ranking-Studio-starten.cmd</b> doppelklicken. Beim allerersten Mal fragt er, ob er <code>yt-dlp</code> (17 MB) und <code>ffmpeg</code> (80 MB) laden darf — mit <kbd>J</kbd> bestätigen. Beides landet nur in <code>%LOCALAPPDATA%\RankingStudio\bin</code>, ohne Adminrechte und ohne Systeminstallation.</li>
+    <li>Das schwarze Konsolenfenster offen lassen, solange du arbeitest. Diese Seite neu laden — oben rechts steht dann <b>Helfer bereit</b>.</li>
+    <li>Link in ein Clip-Feld einfügen, auf <b>Laden</b> klicken. Fertig.</li>
+  </ol>
+  <p class="hint" style="margin-top:14px">Es ist egal, ob du diese Seite per Doppelklick öffnest oder über <code>http://127.0.0.1:8787</code> — der Helfer wird in beiden Fällen gefunden.</p>
+  <p class="hint">Bereits geladene Links werden zwischengespeichert; derselbe Link ist beim zweiten Mal sofort da. Ohne <code>ffmpeg</code> lädt yt-dlp nur einfache Formate, meist bis 720p. Instagram verlangt bei privaten Beiträgen eine Anmeldung und schlägt dann fehl. Werkzeuge aktualisieren: <code>RankingHelper.ps1 -Setup</code>.</p>
+  <p class="hint">Downloads von YouTube und TikTok verstoßen gegen deren Nutzungsbedingungen — die Entscheidung liegt bei dir.</p>
+
+  <h2 style="margin-top:30px;font-size:17px">Kleinigkeiten</h2>
+  <ol>
+    <li><b>Tastenkürzel:</b> <kbd>Leertaste</kbd> Play/Pause · <kbd>←</kbd> <kbd>→</kbd> Clip wechseln</li>
+    <li><b>Beste Qualität:</b> Chrome oder Edge verwenden, dort ist MP4-Aufnahme verfügbar.</li>
+    <li><b>Projekt sichern</b> speichert Titel, Namen, Links, Reihenfolge und Timings als JSON. Videodateien selbst stecken nicht darin — geladene Links holt der Helfer aber sofort aus dem Zwischenspeicher.</li>
+    <li><b>Ohne Helfer</b> funktioniert alles Übrige ganz normal, nur eben mit Dateien statt Links.</li>
+  </ol>
+</section>
+
+<div id="vidPool"></div>
+<div class="toast" id="toast"></div>
+
+<input type="file" id="fBulk" accept="video/*" multiple hidden>
+<input type="file" id="fSingle" accept="video/*" hidden>
+<input type="file" id="fMusic" accept="audio/*" hidden>
+<input type="file" id="fProject" accept="application/json,.json" hidden>
+
+<!-- =====================================================================
+     Eingebetteter Helfer. Wird nie ausgeführt, nur als Text gespeichert.
+
+     WARTUNG — wichtig:
+     Der Inhalt der beiden Blöcke ist eine wortgleiche Kopie von
+     ranking-helper/RankingHelper.ps1 bzw. Ranking-Studio-starten.cmd.
+     Wer eine dieser Dateien ändert, muss die Kopie hier ersetzen, sonst
+     laufen Datei und eingebettete Fassung auseinander. Einspielen mit
+     ranking-helper/Einbetten.ps1 — dort wird literal gespleisst, nicht
+     per -replace: der PowerShell-Quelltext steckt voller $-Variablen,
+     die als Gruppenverweise gedeutet und stillschweigend geleert würden.
+
+     RankingHelper.ps1 muss reines ASCII bleiben: PowerShell 5.1 liest
+     .ps1-Dateien ohne BOM als ANSI, dann zerlegen Umlaute den Parser.
+     ===================================================================== -->
+<script type="text/plain" id="src-ps1">#requires -version 5.1
+<#
+  Ranking Studio - lokaler Helfer
+  ---------------------------------------------------------------
+  Ein Browser darf keine Programme starten. Dieser Helfer laeuft
+  deshalb ausserhalb des Browsers, laedt Video-Links per yt-dlp
+  und reicht die fertige Datei an das Studio durch.
+
+  Alles bleibt auf diesem Rechner. Es wird nichts hochgeladen.
+  Beenden mit Strg+C oder Fenster schliessen.
+
+  Aufrufe:
+    RankingHelper.ps1                 normaler Start
+    RankingHelper.ps1 -Setup          yt-dlp und ffmpeg aktualisieren
+    RankingHelper.ps1 -Port 8790      anderer Port
+#>
+param(
+  [int]$Port = 8787,
+  [string]$Html = '',
+  [switch]$Setup,
+  [switch]$NoBrowser,
+  [switch]$Yes
+)
+
+$ErrorActionPreference = 'Stop'
+$VERSION = '1.1'
+
+$YTDLP_URL  = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+$FFMPEG_URL = 'https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip'
+
+# ---------------------------------------------------------------- Pfade
+$Root    = Join-Path $env:LOCALAPPDATA 'RankingStudio'
+$BinDir  = Join-Path $Root 'bin'
+$DownDir = Join-Path $Root 'downloads'
+$MemoPth = Join-Path $Root 'html-pfad.txt'
+New-Item -ItemType Directory -Force -Path $BinDir  | Out-Null
+New-Item -ItemType Directory -Force -Path $DownDir | Out-Null
+
+function Find-Tool([string]$name) {
+  $local = Join-Path $BinDir "$name.exe"
+  if (Test-Path $local) { return $local }
+  $cmd = Get-Command "$name.exe" -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  return $null
+}
+
+function Find-Html {
+  $cands = @()
+  if ($Html) { $cands += $Html }
+  $cands += (Join-Path $PSScriptRoot 'RankingStudio.html')
+  $cands += (Join-Path (Split-Path $PSScriptRoot -Parent) 'RankingStudio.html')
+  $cands += (Join-Path $env:USERPROFILE 'Downloads\RankingStudio.html')
+  if (Test-Path $MemoPth) {
+    try { $cands += ([IO.File]::ReadAllText($MemoPth)).Trim() } catch { }
+  }
+  foreach ($c in $cands) {
+    if ($c -and (Test-Path $c)) {
+      try { [IO.File]::WriteAllText($MemoPth, $c) } catch { }
+      return $c
+    }
+  }
+  return $null
+}
+
+# ---------------------------------------------------------------- Setup
+function Confirm-Yes([string]$frage) {
+  if ($Yes) { return $true }
+  if (-not [Environment]::UserInteractive) { return $false }
+  $a = Read-Host ("  " + $frage + " [J/n]")
+  return ($a -eq '' -or $a -match '^[jJyY]')
+}
+
+function Install-Ytdlp {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  Write-Host "  yt-dlp wird geladen (ca. 17 MB) ..." -ForegroundColor Cyan
+  Write-Host "  Quelle: $YTDLP_URL" -ForegroundColor DarkGray
+  Invoke-WebRequest -Uri $YTDLP_URL -OutFile (Join-Path $BinDir 'yt-dlp.exe') -UseBasicParsing
+  Write-Host "  yt-dlp fertig." -ForegroundColor Green
+}
+
+function Install-Ffmpeg {
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  Write-Host "  ffmpeg wird geladen (ca. 80 MB, dauert einen Moment) ..." -ForegroundColor Cyan
+  Write-Host "  Quelle: $FFMPEG_URL" -ForegroundColor DarkGray
+  $zip = Join-Path $env:TEMP 'rs-ffmpeg.zip'
+  $tmp = Join-Path $env:TEMP 'rs-ffmpeg'
+  Invoke-WebRequest -Uri $FFMPEG_URL -OutFile $zip -UseBasicParsing
+  if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+  Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force
+  foreach ($exe in @('ffmpeg.exe', 'ffprobe.exe')) {
+    $f = Get-ChildItem -Path $tmp -Filter $exe -Recurse -File | Select-Object -First 1
+    if ($f) { Copy-Item $f.FullName -Destination (Join-Path $BinDir $exe) -Force }
+  }
+  Remove-Item $zip -Force -ErrorAction SilentlyContinue
+  Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+  Write-Host "  ffmpeg fertig." -ForegroundColor Green
+}
+
+function Ensure-Tools {
+  if ($Setup) {
+    Write-Host ""
+    Write-Host "  Aktualisiere Werkzeuge ..." -ForegroundColor Cyan
+    try { Install-Ytdlp }  catch { Write-Host "  yt-dlp FEHLER: $($_.Exception.Message)" -ForegroundColor Red }
+    try { Install-Ffmpeg } catch { Write-Host "  ffmpeg FEHLER: $($_.Exception.Message)" -ForegroundColor Red }
+    return
+  }
+  if (-not (Find-Tool 'yt-dlp')) {
+    Write-Host ""
+    Write-Host "  yt-dlp fehlt. Ohne dieses Programm kann der Helfer keine Links laden." -ForegroundColor Yellow
+    Write-Host "  Es kommt vom offiziellen Projekt und landet nur in:" -ForegroundColor DarkGray
+    Write-Host "  $BinDir" -ForegroundColor DarkGray
+    if (Confirm-Yes 'Jetzt herunterladen?') {
+      try { Install-Ytdlp } catch { Write-Host "  FEHLER: $($_.Exception.Message)" -ForegroundColor Red }
+    } else {
+      Write-Host "  Uebersprungen. Das Studio funktioniert weiter mit Dateien statt Links." -ForegroundColor DarkGray
+    }
+  }
+  if ((Find-Tool 'yt-dlp') -and -not (Find-Tool 'ffmpeg')) {
+    Write-Host ""
+    Write-Host "  ffmpeg fehlt. Ohne ffmpeg laedt yt-dlp meist nur bis 720p." -ForegroundColor Yellow
+    if (Confirm-Yes 'ffmpeg ebenfalls laden? (ca. 80 MB)') {
+      try { Install-Ffmpeg } catch { Write-Host "  FEHLER: $($_.Exception.Message)" -ForegroundColor Red }
+    } else {
+      Write-Host "  Uebersprungen. Spaeter nachholbar mit: RankingHelper.ps1 -Setup" -ForegroundColor DarkGray
+    }
+  }
+}
+
+# ---------------------------------------------------------------- HTTP-Helfer
+function Add-Cors($res) {
+  $res.Headers['Access-Control-Allow-Origin']          = '*'
+  $res.Headers['Access-Control-Allow-Headers']         = 'Content-Type'
+  $res.Headers['Access-Control-Allow-Methods']         = 'GET,POST,OPTIONS'
+  $res.Headers['Access-Control-Allow-Private-Network'] = 'true'
+  $res.Headers['Cache-Control']                        = 'no-store'
+}
+
+function Send-Bytes($ctx, [byte[]]$bytes, [string]$type, [int]$code) {
+  $res = $ctx.Response
+  $res.StatusCode      = $code
+  $res.ContentType     = $type
+  $res.ContentLength64 = $bytes.Length
+  Add-Cors $res
+  $res.OutputStream.Write($bytes, 0, $bytes.Length)
+  $res.OutputStream.Close()
+}
+
+function Send-Json($ctx, $obj, [int]$code = 200) {
+  $json = $obj | ConvertTo-Json -Depth 6 -Compress
+  Send-Bytes $ctx ([Text.Encoding]::UTF8.GetBytes($json)) 'application/json; charset=utf-8' $code
+}
+
+function Read-Body($ctx) {
+  $sr = New-Object IO.StreamReader($ctx.Request.InputStream, [Text.Encoding]::UTF8)
+  $txt = $sr.ReadToEnd(); $sr.Close()
+  if ([string]::IsNullOrWhiteSpace($txt)) { return $null }
+  try { return $txt | ConvertFrom-Json } catch { return $null }
+}
+
+# ---------------------------------------------------------------- Jobs
+$script:jobs = @{}
+
+function Get-JobId([string]$url) {
+  $sha = [Security.Cryptography.SHA1]::Create()
+  $h = $sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($url.Trim()))
+  $hex = ($h | ForEach-Object { $_.ToString('x2') }) -join ''
+  return 'v' + $hex.Substring(0, 12)
+}
+
+function Get-MediaFile([string]$id) {
+  Get-ChildItem -Path $DownDir -Filter "$id.*" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -match '^\.(mp4|webm|mkv|mov|m4v)$' } |
+    Sort-Object Length -Descending | Select-Object -First 1
+}
+
+function Read-LogTail([string]$path, [int]$n = 10) {
+  if (-not (Test-Path $path)) { return @() }
+  try {
+    $fs = New-Object IO.FileStream($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    $sr = New-Object IO.StreamReader($fs)
+    $all = $sr.ReadToEnd(); $sr.Close(); $fs.Close()
+    $lines = @($all -split "`r?`n" | Where-Object { $_.Trim() -ne '' })
+    if ($lines.Count -gt $n) { return $lines[($lines.Count - $n)..($lines.Count - 1)] }
+    return $lines
+  } catch { return @() }
+}
+
+function Get-JobProgress([string]$log) {
+  $lines = Read-LogTail $log 12
+  for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+    if ($lines[$i] -match '\[download\]\s+([\d.]+)%') { return [double]$Matches[1] }
+  }
+  return 0
+}
+
+function Get-JobTitle([string]$id) {
+  $j = Join-Path $DownDir "$id.info.json"
+  if (Test-Path $j) {
+    try { return (Get-Content -LiteralPath $j -Raw -Encoding UTF8 | ConvertFrom-Json).title } catch { }
+  }
+  return $null
+}
+
+function Start-Fetch([string]$url, [string]$id) {
+  $ytdlp = Find-Tool 'yt-dlp'
+  if (-not $ytdlp) { throw 'yt-dlp fehlt. Helfer neu starten und die Frage mit J beantworten.' }
+  $ffmpeg = Find-Tool 'ffmpeg'
+
+  Get-ChildItem -Path $DownDir -Filter "$id.*" -File -ErrorAction SilentlyContinue |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+
+  $log    = Join-Path $DownDir "$id.log"
+  $errLog = $log + '.err'
+  $out    = Join-Path $DownDir "$id.%(ext)s"
+
+  $a = @('--no-playlist', '--no-part', '--newline', '--no-mtime',
+         '--write-info-json', '--retries', '3', '-o', $out)
+  if ($ffmpeg) {
+    $a += @('--ffmpeg-location', (Split-Path $ffmpeg -Parent),
+            '-f', 'bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b',
+            '--merge-output-format', 'mp4')
+  } else {
+    $a += @('-f', 'b[ext=mp4]/b')
+  }
+  $a += $url
+
+  $p = Start-Process -FilePath $ytdlp -ArgumentList $a -NoNewWindow -PassThru `
+        -RedirectStandardOutput $log -RedirectStandardError $errLog
+
+  $script:jobs[$id] = @{ proc = $p; log = $log; err = $errLog; url = $url; started = Get-Date }
+  Write-Host ("  -> yt-dlp gestartet (PID {0})" -f $p.Id) -ForegroundColor DarkGray
+}
+
+function Get-JobState([string]$id) {
+  $file = Get-MediaFile $id
+  $job  = $script:jobs[$id]
+
+  if (-not $job) {
+    if ($file) { return @{ state = 'done'; progress = 100; title = (Get-JobTitle $id); size = $file.Length } }
+    return @{ state = 'unknown'; progress = 0 }
+  }
+
+  if (-not $job.proc.HasExited) {
+    return @{ state = 'running'; progress = (Get-JobProgress $job.log); title = (Get-JobTitle $id) }
+  }
+
+  if ($file) { return @{ state = 'done'; progress = 100; title = (Get-JobTitle $id); size = $file.Length } }
+
+  $tail = @(Read-LogTail $job.err 6) + @(Read-LogTail $job.log 6)
+  $msg  = ($tail | Where-Object { $_ -match 'ERROR|Unsupported|Unable|HTTP Error' } | Select-Object -Last 1)
+  if (-not $msg) { $msg = ($tail | Select-Object -Last 1) }
+  if (-not $msg) { $msg = 'Download fehlgeschlagen.' }
+  return @{ state = 'error'; progress = 0; error = [string]$msg }
+}
+
+# ---------------------------------------------------------------- Start
+Write-Host ""
+Write-Host "  RANKING STUDIO - Helfer" -ForegroundColor Green
+Write-Host "  ---------------------------------------------"
+
+$base = "http://127.0.0.1:$Port/"
+
+# Laeuft schon einer? Dann nicht doppelt starten, nur Browser oeffnen.
+function Test-Running([int]$p) {
+  try {
+    $r = Invoke-RestMethod ("http://127.0.0.1:{0}/health" -f $p) -TimeoutSec 2
+    return [bool]$r.ok
+  } catch { return $false }
+}
+
+if (Test-Running $Port) {
+  Write-Host ""
+  Write-Host "  Der Helfer laeuft bereits - es wird nur das Studio geoeffnet." -ForegroundColor Green
+  Write-Host "  $base"
+  Write-Host ""
+  if (-not $NoBrowser) { Start-Process $base | Out-Null }
+  Start-Sleep -Seconds 2
+  exit 0
+}
+
+Ensure-Tools
+
+$listener = New-Object System.Net.HttpListener
+$listener.Prefixes.Add("http://127.0.0.1:$Port/")
+try { $listener.Start() }
+catch {
+  Write-Host ""
+  Write-Host "  Port $Port ist belegt - laeuft der Helfer vielleicht schon?" -ForegroundColor Yellow
+  Write-Host "  Anderer Port:  RankingHelper.ps1 -Port 8790"
+  Write-Host ""
+  Read-Host "Enter zum Beenden"; exit 1
+}
+
+$HtmlPath = Find-Html
+$ytdlp    = Find-Tool 'yt-dlp'
+$ffmpeg   = Find-Tool 'ffmpeg'
+
+$FALLBACK = @"
+<!doctype html><meta charset="utf-8"><title>Ranking-Helfer</title>
+<body style="background:#05070f;color:#e8eef9;font-family:Segoe UI,system-ui,sans-serif;padding:44px;line-height:1.7">
+<h1 style="color:#34d399">Helfer laeuft</h1>
+<p>Die Datei <b>RankingStudio.html</b> liegt nicht neben diesem Skript und wurde auch sonst nicht gefunden.</p>
+<p>Das ist kein Problem: oeffne <b>RankingStudio.html</b> einfach per Doppelklick.
+Die Seite findet den Helfer von selbst und zeigt oben rechts <b>Helfer bereit</b>.</p>
+<p style="color:#8b9bba">Soll die Seite auch von hier kommen, lege RankingStudio.html neben RankingHelper.ps1 und starte neu.</p>
+</body>
+"@
+
+Write-Host ""
+Write-Host "  ---------------------------------------------"
+Write-Host "  Adresse   : $base"
+Write-Host ("  yt-dlp    : {0}" -f $(if ($ytdlp)  { 'bereit' } else { 'fehlt - Link-Import inaktiv' }))
+Write-Host ("  ffmpeg    : {0}" -f $(if ($ffmpeg) { 'bereit' } else { 'fehlt - meist nur bis 720p' }))
+Write-Host ("  Downloads : {0}" -f $DownDir)
+Write-Host ("  Studio    : {0}" -f $(if ($HtmlPath) { $HtmlPath } else { 'nicht gefunden - HTML einfach direkt oeffnen' }))
+Write-Host "  ---------------------------------------------"
+Write-Host "  Fenster offen lassen. Beenden mit Strg+C." -ForegroundColor DarkGray
+Write-Host ""
+
+if (-not $NoBrowser -and $HtmlPath) { Start-Process $base | Out-Null }
+
+try {
+  while ($listener.IsListening) {
+    $ctx = $listener.GetContext()
+    try {
+      $req  = $ctx.Request
+      $path = $req.Url.AbsolutePath.TrimEnd('/')
+      if ($path -eq '') { $path = '/' }
+
+      if ($req.HttpMethod -eq 'OPTIONS') {
+        Add-Cors $ctx.Response
+        $ctx.Response.StatusCode = 204
+        $ctx.Response.Close()
+        continue
+      }
+
+      switch ($path) {
+
+        '/' {
+          if ($HtmlPath -and (Test-Path $HtmlPath)) {
+            Send-Bytes $ctx ([IO.File]::ReadAllBytes($HtmlPath)) 'text/html; charset=utf-8' 200
+          } else {
+            Send-Bytes $ctx ([Text.Encoding]::UTF8.GetBytes($FALLBACK)) 'text/html; charset=utf-8' 200
+          }
+          break
+        }
+
+        '/health' {
+          Send-Json $ctx @{
+            ok      = $true
+            version = $VERSION
+            ytdlp   = [bool](Find-Tool 'yt-dlp')
+            ffmpeg  = [bool](Find-Tool 'ffmpeg')
+            folder  = $DownDir
+          }
+          break
+        }
+
+        '/fetch' {
+          $body = Read-Body $ctx
+          $url  = $null
+          if ($body) { $url = [string]$body.url }
+          if ([string]::IsNullOrWhiteSpace($url)) { Send-Json $ctx @{ error = 'Kein Link uebergeben.' } 400; break }
+          if ($url -notmatch '^https?://')        { Send-Json $ctx @{ error = 'Link muss mit http(s):// beginnen.' } 400; break }
+
+          $id = Get-JobId $url
+          Write-Host ("[fetch] {0}" -f $url) -ForegroundColor Cyan
+
+          $existing = Get-MediaFile $id
+          if ($existing) {
+            Write-Host "  -> bereits vorhanden, kein erneuter Download" -ForegroundColor DarkGray
+            Send-Json $ctx @{ id = $id; state = 'done'; cached = $true; title = (Get-JobTitle $id) }
+            break
+          }
+          $job = $script:jobs[$id]
+          if ($job -and -not $job.proc.HasExited) { Send-Json $ctx @{ id = $id; state = 'running' }; break }
+
+          try { Start-Fetch $url $id; Send-Json $ctx @{ id = $id; state = 'running' } }
+          catch { Send-Json $ctx @{ error = $_.Exception.Message } 500 }
+          break
+        }
+
+        '/job' {
+          $id = $req.QueryString['id']
+          if (-not $id) { Send-Json $ctx @{ error = 'id fehlt' } 400; break }
+          $st = Get-JobState $id
+          $st['id'] = $id
+          Send-Json $ctx $st
+          break
+        }
+
+        '/media' {
+          $id = $req.QueryString['id']
+          $file = $null
+          if ($id) { $file = Get-MediaFile $id }
+          if (-not $file) { Send-Json $ctx @{ error = 'Datei nicht gefunden' } 404; break }
+
+          $res = $ctx.Response
+          $res.StatusCode = 200
+          $res.ContentType = $(if ($file.Extension -eq '.webm') { 'video/webm' } else { 'video/mp4' })
+          $res.ContentLength64 = $file.Length
+          Add-Cors $res
+          $fs = [IO.File]::OpenRead($file.FullName)
+          try { $fs.CopyTo($res.OutputStream) } finally { $fs.Close() }
+          $res.OutputStream.Close()
+          Write-Host ("[media] {0} ({1:N1} MB)" -f $file.Name, ($file.Length / 1MB)) -ForegroundColor DarkGray
+          break
+        }
+
+        '/library' {
+          $items = @()
+          Get-ChildItem -Path $DownDir -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension -match '^\.(mp4|webm|mkv|mov|m4v)$' } |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 40 |
+            ForEach-Object {
+              $bid = [IO.Path]::GetFileNameWithoutExtension($_.Name)
+              $items += @{ id = $bid; title = (Get-JobTitle $bid); size = $_.Length; date = $_.LastWriteTime.ToString('s') }
+            }
+          Send-Json $ctx @{ items = $items }
+          break
+        }
+
+        default { Send-Json $ctx @{ error = 'Unbekannter Endpunkt' } 404 }
+      }
+    }
+    catch {
+      Write-Host ("[fehler] {0}" -f $_.Exception.Message) -ForegroundColor Red
+      try { Send-Json $ctx @{ error = $_.Exception.Message } 500 } catch { }
+    }
+  }
+}
+finally {
+  try { $listener.Stop(); $listener.Close() } catch { }
+  Write-Host "Helfer beendet." -ForegroundColor DarkGray
+}
+</script>
+<script type="text/plain" id="src-cmd">@echo off
+title Ranking Studio
+setlocal
+
+rem Sucht RankingHelper.ps1 neben dieser Datei oder im Unterordner
+rem ranking-helper. So funktioniert dieselbe Datei an beiden Orten.
+set "PS=%~dp0RankingHelper.ps1"
+if not exist "%PS%" set "PS=%~dp0ranking-helper\RankingHelper.ps1"
+
+if not exist "%PS%" (
+  echo.
+  echo   RankingHelper.ps1 wurde nicht gefunden.
+  echo   Erwartet neben dieser Datei oder in ranking-helper\
+  echo.
+  echo   Loesung: RankingStudio.html oeffnen, in Box 2 auf
+  echo   "Helfer speichern" klicken und beide Dateien in
+  echo   denselben Ordner legen wie diese hier.
+  echo.
+  pause
+  exit /b 1
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS%"
+echo.
+pause
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const FONT = '"Inter","Segoe UI",system-ui,sans-serif';
+const W = 1080, H = 1920;
+const MEDAL = { 1:'#FFD34D', 2:'#D9E0EC', 3:'#E08A4A' };
+const DEF = () => ({
+  title: 'TOP 5 TORE\nDES JAHRES',
+  wordColors: {},
+  paint: '#34d399',
+  titleSize: 82, titlePos: 'top', titleBg: 'solid', titleUpper: true,
+  rankCount: 5,
+  listOrder: 'asc', fitMode: 'cover',
+  accent: '#34d399', watermark: '',
+  revealNames: true, hideFuture: false,
+  clipLen: 6, volVideo: 1, volMusic: .35,
+  clips: [], order: []
+});
+let S = DEF();
+
+const uid = () => 'c' + Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const $ = id => document.getElementById(id);
+const getClip = id => S.clips.find(c => c.id === id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+
+function makeClips(n) {
+  const old = S.clips;
+  S.clips = Array.from({ length: n }, (_, i) =>
+    old[i] || { id: uid(), rank: i + 1, label: '', video: null, url: '', fileName: '', duration: 0, trimStart: 0, len: S.clipLen, thumb: '' }
+  );
+  S.clips.forEach((c, i) => c.rank = i + 1);
+  const ids = S.clips.map(c => c.id);
+  S.order = S.order.filter(id => ids.includes(id));
+  ids.forEach(id => { if (!S.order.includes(id)) S.order.push(id); });
+}
+makeClips(5);
+S.order = [...S.clips].sort((a, b) => b.rank - a.rank).map(c => c.id);
+
+/* =====================================================================
+   PLAYBACK ENGINE
+   ===================================================================== */
+const cv = $('stage'), ctx = cv.getContext('2d');
+let segIdx = 0, playing = false, switching = false, exporting = false;
+let vOff = 0, vStart = 0;                       // virtuelle Uhr für Slots ohne Datei
+
+const SEGS = () => S.order.map(getClip).filter(Boolean);
+const segLen = c => Math.max(.3, c.len || S.clipLen);
+const total = () => SEGS().reduce((a, c) => a + segLen(c), 0);
+
+function vNow() { return playing ? vOff + (performance.now() - vStart) / 1000 : vOff; }
+
+function offset() {
+  const segs = SEGS(), c = segs[segIdx];
+  if (!c) return 0;
+  if (c.video && c.video.readyState >= 1) return clamp(c.video.currentTime - c.trimStart, 0, segLen(c));
+  return clamp(vNow(), 0, segLen(c));
+}
+function elapsed() {
+  const segs = SEGS(); let t = 0;
+  for (let i = 0; i < segIdx && i < segs.length; i++) t += segLen(segs[i]);
+  return t + offset();
+}
+
+function seek(v, t) {
+  return new Promise(res => {
+    let done = false;
+    const fin = () => { if (done) return; done = true; v.removeEventListener('seeked', fin); res(); };
+    if (v.readyState < 1) { v.addEventListener('loadedmetadata', () => { v.currentTime = t; }, { once: true }); }
+    v.addEventListener('seeked', fin);
+    try { v.currentTime = t; } catch (e) { fin(); }
+    setTimeout(fin, 1200);
+  });
+}
+
+async function goto(i, autoplay) {
+  const segs = SEGS(); if (!segs.length) return;
+  switching = true;
+  const prev = segs[segIdx];
+  if (prev && prev.video) prev.video.pause();
+  segIdx = clamp(i, 0, segs.length - 1);
+  vOff = 0; vStart = performance.now();
+  const c = segs[segIdx];
+  if (c.video) {
+    hookAudio(c.video);
+    await seek(c.video, c.trimStart);
+    if (autoplay) { try { await c.video.play(); } catch (e) {} }
+  }
+  switching = false;
+  renderOrder(); renderClips();
+}
+
+async function play() {
+  const segs = SEGS(); if (!segs.length) return;
+  ensureAudio(); if (actx.state === 'suspended') actx.resume().catch(() => {});
+  playing = true; vStart = performance.now();
+  const c = segs[segIdx];
+  if (c && c.video) { hookAudio(c.video); try { await c.video.play(); } catch (e) {} }
+  if (musicEl) { try { await musicEl.play(); } catch (e) {} }
+  $('btnPlay').textContent = '❚❚';
+}
+function pause() {
+  vOff = vNow(); playing = false;
+  const c = SEGS()[segIdx];
+  if (c && c.video) c.video.pause();
+  if (musicEl) musicEl.pause();
+  $('btnPlay').textContent = '▶';
+}
+async function stopAll() { pause(); await goto(0, false); vOff = 0; }
+
+async function nextSeg() {
+  const segs = SEGS();
+  if (segIdx < segs.length - 1) { await goto(segIdx + 1, playing); }
+  else if (exporting) { finishExport(); }
+  else { await goto(0, playing); }
+}
+
+function tick() {
+  draw();
+  if (playing && !switching) {
+    const segs = SEGS(), c = segs[segIdx];
+    if (c && offset() >= segLen(c) - .03) nextSeg();
+  }
+  updateHud();
+  requestAnimationFrame(tick);
+}
+
+/* =====================================================================
+   AUDIO
+   ===================================================================== */
+let actx = null, master = null, dest = null, musicEl = null, musicGain = null;
+const gains = new Map();
+
+function ensureAudio() {
+  if (actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  master = actx.createGain();
+  dest = actx.createMediaStreamDestination();
+  master.connect(actx.destination);
+  master.connect(dest);
+}
+function hookAudio(v) {
+  ensureAudio();
+  if (gains.has(v)) return;
+  try {
+    const src = actx.createMediaElementSource(v);
+    const g = actx.createGain(); g.gain.value = S.volVideo;
+    src.connect(g); g.connect(master);
+    gains.set(v, g);
+  } catch (e) {}
+}
+function syncVolumes() {
+  gains.forEach(g => g.gain.value = S.volVideo);
+  if (musicGain) musicGain.gain.value = S.volMusic;
+}
+
+/* =====================================================================
+   CANVAS DRAWING
+   ===================================================================== */
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else {
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+}
+function setFont(weight, size, italic) { ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${FONT}`; }
+function outline(text, x, y, fill, lw) {
+  ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+  ctx.lineWidth = lw; ctx.strokeStyle = '#000';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = fill; ctx.fillText(text, x, y);
+}
+
+function tokens() {
+  const t = S.titleUpper ? S.title.toUpperCase() : S.title;
+  return t.split('\n').map(l => l.split(/\s+/).filter(Boolean));
+}
+function layoutTitle(maxW) {
+  const lines = []; let gi = 0;
+  for (const src of tokens()) {
+    let cur = [];
+    for (const w of src) {
+      const tok = { t: w, i: gi++ };
+      const test = cur.concat(tok).map(x => x.t).join(' ');
+      if (cur.length && ctx.measureText(test).width > maxW) { lines.push(cur); cur = [tok]; }
+      else cur.push(tok);
+    }
+    lines.push(cur);
+  }
+  return lines.filter((l, i, a) => l.length || i < a.length - 1);
+}
+
+function drawTitle() {
+  if (!S.title.trim()) return 0;
+  const pad = 46, maxW = W - pad * 2;
+  let size = S.titleSize;
+  let lines, lh;
+  for (;;) {
+    setFont(900, size, false);
+    lines = layoutTitle(maxW);
+    lh = size * 1.07;
+    if (lines.length * lh <= H * .34 || size <= 34) break;
+    size -= 3;
+  }
+  const blockH = lines.length * lh + pad * 1.5;
+  const top = S.titlePos === 'top' ? 0 : H - blockH - 24;
+
+  if (S.titleBg === 'solid') { ctx.fillStyle = '#000'; ctx.fillRect(0, top, W, blockH); }
+  else if (S.titleBg === 'fade') {
+    const g = ctx.createLinearGradient(0, top, 0, top + blockH);
+    if (S.titlePos === 'top') { g.addColorStop(0, 'rgba(0,0,0,.92)'); g.addColorStop(1, 'rgba(0,0,0,0)'); }
+    else { g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.92)'); }
+    ctx.fillStyle = g; ctx.fillRect(0, top, W, blockH);
+  }
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  setFont(900, size, false);
+  const spaceW = ctx.measureText(' ').width;
+  lines.forEach((line, li) => {
+    const y = top + pad * .75 + lh * (li + .5);
+    const wds = line.map(tk => ({ ...tk, w: ctx.measureText(tk.t).width }));
+    const totalW = wds.reduce((a, x) => a + x.w, 0) + spaceW * Math.max(0, wds.length - 1);
+    let x = (W - totalW) / 2;
+    ctx.textAlign = 'left';
+    for (const wd of wds) {
+      outline(wd.t, x, y, S.wordColors[wd.i] || '#fff', Math.max(6, size * .11));
+      x += wd.w + spaceW;
+    }
+  });
+  return S.titlePos === 'top' ? blockH : 0;
+}
+
+function drawRanks(topOffset) {
+  const n = S.rankCount;
+  const segs = SEGS();
+  const revealed = new Set(segs.slice(0, segIdx + 1).map(c => c.rank));
+  const currentRank = segs[segIdx] ? segs[segIdx].rank : null;
+
+  const ranks = Array.from({ length: n }, (_, i) => i + 1);
+  if (S.listOrder === 'desc') ranks.reverse();
+
+  const listTop = (S.titlePos === 'top' ? topOffset : 90) + 170;
+  const avail = H - listTop - (S.titlePos === 'bottom' ? 520 : 180);
+  const rowH = Math.min(112, avail / n);
+  const numSize = Math.min(80, rowH * .72);
+  const labSize = Math.min(60, rowH * .55);
+  const x0 = 54;
+
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+
+  ranks.forEach((rank, i) => {
+    const clip = S.clips.find(c => c.rank === rank);
+    const y = listTop + rowH * (i + .5);
+    const isCur = rank === currentRank;
+    const isRev = revealed.has(rank);
+    if (S.hideFuture && !isRev) return;
+
+    if (isCur) {
+      ctx.save();
+      ctx.globalAlpha = .16; ctx.fillStyle = S.accent;
+      rr(x0 - 24, y - rowH * .40, W - x0 * 2 + 48, rowH * .80, 18); ctx.fill();
+      ctx.globalAlpha = 1; ctx.fillStyle = S.accent;
+      rr(x0 - 24, y - rowH * .40, 8, rowH * .80, 4); ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = (!isRev && !isCur) ? .62 : 1;
+    setFont(900, isCur ? numSize * 1.06 : numSize, true);
+    const numTxt = rank + '.';
+    outline(numTxt, x0, y, MEDAL[rank] || '#9FB0CC', numSize * .12);
+    const numW = ctx.measureText(numTxt).width;
+
+    const showLabel = clip && clip.label && (!S.revealNames || isRev);
+    if (showLabel) {
+      setFont(900, isCur ? labSize * 1.04 : labSize, false);
+      outline(clip.label, x0 + numW + 26, y + 2, isCur ? S.accent : '#fff', labSize * .13);
+    }
+    ctx.globalAlpha = 1;
+  });
+}
+
+function drawVideo(v) {
+  const vw = v.videoWidth, vh = v.videoHeight;
+  if (!vw || !vh) return;
+  if (S.fitMode === 'blur') {
+    const sC = Math.max(W / vw, H / vh);
+    ctx.save(); ctx.filter = 'blur(48px) brightness(.55)';
+    ctx.drawImage(v, (W - vw * sC) / 2, (H - vh * sC) / 2, vw * sC, vh * sC);
+    ctx.restore();
+    const sF = Math.min(W / vw, H / vh);
+    ctx.drawImage(v, (W - vw * sF) / 2, (H - vh * sF) / 2, vw * sF, vh * sF);
+  } else {
+    const s = Math.max(W / vw, H / vh);
+    ctx.drawImage(v, (W - vw * s) / 2, (H - vh * s) / 2, vw * s, vh * s);
+  }
+}
+
+function drawPlaceholder() {
+  ctx.fillStyle = '#070c18'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.strokeStyle = '#1a2440'; ctx.lineWidth = 2;
+  for (let i = -H; i < W; i += 70) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawWatermark() {
+  if (!S.watermark.trim()) return;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  setFont(800, 36, false);
+  ctx.globalAlpha = .82;
+  outline(S.watermark, W - 40, H - 40, '#fff', 5);
+  ctx.globalAlpha = 1;
+}
+
+function drawProgress() {
+  const t = total(); if (!t) return;
+  const barH = 12, y = H - barH;
+  ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(0, y, W, barH);
+  const g = ctx.createLinearGradient(0, 0, W, 0);
+  g.addColorStop(0, S.accent); g.addColorStop(1, '#22d3ee');
+  ctx.fillStyle = g; ctx.fillRect(0, y, W * clamp(elapsed() / t, 0, 1), barH);
+  let acc = 0; ctx.fillStyle = '#000';
+  for (const c of SEGS()) { acc += segLen(c); if (acc < t) ctx.fillRect(W * acc / t - 2, y, 4, barH); }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const c = SEGS()[segIdx];
+  if (c && c.video && c.video.readyState >= 2) drawVideo(c.video);
+  else drawPlaceholder();
+  const off = drawTitle();
+  drawRanks(off);
+  drawWatermark();
+  drawProgress();
+}
+
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+const MIMES = [
+  'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+  'video/mp4',
+  'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=vp8,opus',
+  'video/webm'
+];
+let rec = null, chunks = [];
+
+function pickMime() {
+  for (const m of MIMES) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  return '';
+}
+
+async function startExport() {
+  if (exporting) { finishExport(); return; }
+  if (!SEGS().length) return toast('Keine Clips vorhanden');
+  ensureAudio(); if (actx.state === 'suspended') actx.resume().catch(() => {});
+
+  const mime = pickMime();
+  const stream = cv.captureStream(30);
+  const at = dest.stream.getAudioTracks()[0];
+  if (at) stream.addTrack(at);
+
+  try {
+    rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 10e6 } : undefined);
+  } catch (e) { return toast('Aufnahme wird von diesem Browser nicht unterstützt'); }
+
+  chunks = [];
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    const type = rec.mimeType || mime || 'video/webm';
+    const blob = new Blob(chunks, { type });
+    const ext = type.includes('mp4') ? 'mp4' : 'webm';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (S.title.split('\n')[0] || 'ranking').replace(/[^\w\säöüÄÖÜß-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '.' + ext;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Export fertig: ' + a.download);
+  };
+
+  exporting = true;
+  $('btnExport').textContent = 'Aufnahme stoppen';
+  await stopAll();
+  if (musicEl) musicEl.currentTime = 0;
+  rec.start(250);
+  await play();
+}
+
+function finishExport() {
+  if (!exporting) return;
+  exporting = false;
+  pause();
+  if (rec && rec.state !== 'inactive') rec.stop();
+  $('btnExport').textContent = 'Video exportieren';
+  $('exportNote').textContent = 'Rendert in Echtzeit direkt im Browser — Fenster geöffnet lassen.';
+}
+
+/* =====================================================================
+   UI RENDER
+   ===================================================================== */
+const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+function updateHud() {
+  const t = total();
+  $('time').textContent = fmt(elapsed()) + ' / ' + fmt(t);
+  $('scrubFill').style.width = (t ? clamp(elapsed() / t, 0, 1) * 100 : 0) + '%';
+  if (exporting) $('exportNote').textContent = 'Aufnahme läuft… ' + Math.round(clamp(elapsed() / t, 0, 1) * 100) + '%';
+}
+
+function renderSwatches() {
+  const box = $('swatches'); box.innerHTML = '';
+  ['#34d399', '#00ff66', '#ff2e63', '#ffd34d', '#22d3ee', '#ffffff'].forEach(col => {
+    const b = document.createElement('button');
+    b.className = 'sw' + (S.paint.toLowerCase() === col ? ' on' : '');
+    b.style.background = col;
+    b.onclick = () => { S.paint = col; $('paint').value = col; renderSwatches(); };
+    box.appendChild(b);
+  });
+}
+
+function renderChips() {
+  const box = $('chips'); box.innerHTML = '';
+  const lines = tokens();
+  if (!lines.flat().length) { box.innerHTML = '<span class="hint">Titel oben eingeben…</span>'; return; }
+  let gi = 0;
+  lines.forEach((line, li) => {
+    line.forEach(word => {
+      const i = gi++;
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = word;
+      b.style.color = S.wordColors[i] || '#fff';
+      b.onclick = () => {
+        if (S.wordColors[i] === S.paint) delete S.wordColors[i];
+        else S.wordColors[i] = S.paint;
+        renderChips(); save();
+      };
+      box.appendChild(b);
+    });
+    if (li < lines.length - 1) { const br = document.createElement('div'); br.className = 'br'; box.appendChild(br); }
+  });
+}
+
+function renderClips() {
+  const box = $('clipList'); box.innerHTML = '';
+  const cur = SEGS()[segIdx];
+  S.clips.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'clip' + (cur && cur.id === c.id ? ' live' : '');
+    el.dataset.clip = c.id;
+    el.innerHTML = `
+      <div class="badge" style="color:${MEDAL[c.rank] || '#9FB0CC'}">${c.rank}</div>
+      <div class="clipMain">
+        <div class="clipTop">
+          ${c.thumb ? `<img class="thumb" src="${c.thumb}">` : `<div class="thumbEmpty">+</div>`}
+          <input class="inp" placeholder="Name für Platz ${c.rank}" value="${esc(c.label)}">
+        </div>
+        <div class="urlRow">
+          <input class="url" placeholder="Link einfügen (YouTube, TikTok, Instagram …)" value="${esc(c.link || '')}">
+          <button class="mini load">Laden</button>
+        </div>
+        <div class="prog" style="display:none"><div></div></div>
+        <div class="jobmsg"></div>
+        <div class="fileRow">
+          <span class="name">${c.fileName ? esc(c.fileName) : '<i>keine Datei</i>'}</span>
+          <div class="trim">
+            <span>ab</span><input type="number" min="0" step="0.5" value="${(+c.trimStart).toFixed(1)}">
+            <span>für</span><input type="number" min="0.5" step="0.5" value="${(+c.len).toFixed(1)}"><span>s</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <button class="mini pick">Datei</button>
+        <button class="mini danger del">Leeren</button>
+      </div>`;
+
+    const urlIn = el.querySelector('.url');
+    urlIn.oninput = e => { c.link = e.target.value; save(); };
+    urlIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); loadLink(c, urlIn.value); } };
+    el.querySelector('.load').onclick = () => loadLink(c, urlIn.value);
+
+    const [labelIn] = el.querySelectorAll('.clipTop .inp');
+    labelIn.oninput = e => { c.label = e.target.value; renderOrder(); save(); };
+
+    const [tsIn, lenIn] = el.querySelectorAll('.trim input');
+    tsIn.onchange = e => {
+      c.trimStart = clamp(parseFloat(e.target.value) || 0, 0, Math.max(0, c.duration - .3));
+      if (c.duration) c.len = clamp(c.len, .5, Math.max(.5, c.duration - c.trimStart));
+      makeThumb(c); renderClips(); save();
+    };
+    lenIn.onchange = e => {
+      const max = c.duration ? Math.max(.5, c.duration - c.trimStart) : 60;
+      c.len = clamp(parseFloat(e.target.value) || S.clipLen, .5, max);
+      renderClips(); save();
+    };
+
+    el.querySelector('.pick').onclick = () => pickSingle(c.id);
+    el.querySelector('.del').onclick = () => clearClip(c);
+    el.querySelector('.thumb, .thumbEmpty').onclick = () => pickSingle(c.id);
+
+    el.ondragover = e => { e.preventDefault(); el.classList.add('drop'); };
+    el.ondragleave = () => el.classList.remove('drop');
+    el.ondrop = e => {
+      e.preventDefault(); e.stopPropagation(); el.classList.remove('drop');
+      const f = [...e.dataTransfer.files].find(f => f.type.startsWith('video'));
+      if (f) attachFile(c, f);
+    };
+    box.appendChild(el);
+    paintJob(c);
+  });
+  const ready = S.clips.filter(c => c.video).length;
+  $('clipCount').textContent = ready + '/' + S.clips.length + ' geladen';
+}
+
+let dragFrom = null;
+function renderOrder() {
+  const box = $('orderList'); box.innerHTML = '';
+  S.order.forEach((id, i) => {
+    const c = getClip(id); if (!c) return;
+    const el = document.createElement('div');
+    el.className = 'ord' + (i === segIdx ? ' live' : '') + (dragFrom === i ? ' dragging' : '');
+    el.draggable = true;
+    el.innerHTML = `
+      <span class="pos">${i + 1}</span>
+      <span class="rk" style="color:${MEDAL[c.rank] || '#9FB0CC'}">Platz ${c.rank}</span>
+      <span class="lb">${c.label || '<i style="color:#455473">ohne Namen</i>'}${c.video ? '' : ' · <span style="color:#f59e0b">kein Video</span>'}</span>
+      ${i === segIdx ? '<span class="tag">LÄUFT</span>' : ''}
+      <span class="grip">⣿</span>`;
+    el.ondragstart = e => { dragFrom = i; e.dataTransfer.effectAllowed = 'move'; };
+    el.ondragover = e => e.preventDefault();
+    el.ondragenter = e => {
+      e.preventDefault();
+      if (dragFrom === null || dragFrom === i) return;
+      const moved = S.order.splice(dragFrom, 1)[0];
+      S.order.splice(i, 0, moved);
+      dragFrom = i; renderOrder();
+    };
+    el.ondragend = () => { dragFrom = null; renderOrder(); save(); };
+    el.onclick = () => goto(i, playing);
+    box.appendChild(el);
+  });
+}
+
+/* =====================================================================
+   FILES
+   ===================================================================== */
+let pickTarget = null;
+function pickSingle(id) { pickTarget = id; $('fSingle').value = ''; $('fSingle').click(); }
+
+function attachFile(clip, file) { attachBlob(clip, file, file.name); }
+
+function attachBlob(clip, blob, name) {
+  if (clip.url) URL.revokeObjectURL(clip.url);
+  clip.url = URL.createObjectURL(blob);
+  clip.fileName = name;
+  const v = document.createElement('video');
+  v.src = clip.url; v.preload = 'auto'; v.playsInline = true; v.muted = false;
+  $('vidPool').appendChild(v);
+  if (clip.video) clip.video.remove();
+  clip.video = v;
+  v.addEventListener('loadedmetadata', () => {
+    clip.duration = v.duration || 0;
+    clip.trimStart = 0;
+    clip.len = Math.min(S.clipLen, clip.duration || S.clipLen);
+    makeThumb(clip);
+    renderClips(); renderOrder(); save();
+  }, { once: true });
+}
+
+function clearClip(c) {
+  if (c.url) URL.revokeObjectURL(c.url);
+  if (c.video) { c.video.pause(); c.video.remove(); }
+  Object.assign(c, { video: null, url: '', fileName: '', duration: 0, trimStart: 0, len: S.clipLen, thumb: '', link: '', job: null });
+  renderClips(); renderOrder(); save();
+}
+
+/* =====================================================================
+   LOKALER HELFER (yt-dlp)
+   ===================================================================== */
+/* Diese Seite läuft an drei Orten, und der Helfer steckt jedes Mal
+   woanders:
+     · vom Helfer selbst ausgeliefert  → relativ, dann stimmt auch ein
+       abweichender Port (-Port 8790) automatisch
+     · per Doppelklick als file://     → 127.0.0.1:8787
+     · gehostet, z. B. GitHub Pages    → ebenfalls 127.0.0.1:8787
+   Der erste Treffer gewinnt und wird für alle weiteren Aufrufe behalten. */
+const API_TRY = /^(127\.0\.0\.1|localhost)$/.test(location.hostname)
+  ? ['', 'http://127.0.0.1:8787']
+  : ['http://127.0.0.1:8787'];
+let API = API_TRY[0];
+let helper = { ok: false, ytdlp: false, ffmpeg: false };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function checkHelper() {
+  helper = { ok: false, ytdlp: false, ffmpeg: false };
+  for (const base of API_TRY) {
+    try {
+      const r = await fetch(base + '/health', { cache: 'no-store' });
+      if (!r.ok) continue;
+      helper = Object.assign({ ok: true }, await r.json());
+      API = base;
+      break;
+    } catch (e) { /* nächsten Kandidaten versuchen */ }
+  }
+  paintHelper();
+  return helper.ok;
+}
+
+function paintHelper() {
+  const el = $('helperPill');
+  if (helper.ok && helper.ytdlp) {
+    el.className = 'pill on';
+    el.innerHTML = '<span class="dot"></span>Helfer bereit' + (helper.ffmpeg ? '' : ' · ohne ffmpeg');
+    el.title = helper.ffmpeg ? 'Links können geladen werden — volle Auflösung' : 'ffmpeg fehlt: yt-dlp lädt nur einfache Formate, meist bis 720p. Nachholen mit: RankingHelper.ps1 -Setup';
+  } else if (helper.ok) {
+    el.className = 'pill warn';
+    el.innerHTML = '<span class="dot"></span>yt-dlp fehlt';
+    el.title = 'Helfer läuft, aber yt-dlp fehlt. Helfer neu starten und die Frage mit J beantworten — oder: RankingHelper.ps1 -Setup';
+  } else {
+    el.className = 'pill off';
+    el.innerHTML = '<span class="dot"></span>Helfer offline';
+    el.title = 'Ohne Helfer nur Dateien per Drag & Drop. Für Link-Import den Helfer speichern und starten.';
+  }
+  $('helperBox').hidden = !!helper.ok;
+}
+
+/* Helfer-Dateien stecken als Klartext in dieser HTML-Datei und werden
+   bei Bedarf auf die Festplatte geschrieben. */
+function dlText(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/octet-stream' }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+function saveHelperFiles() {
+  const clean = s => s.replace(/^\r?\n/, '').replace(/\r?\n/g, '\r\n');
+  dlText('RankingHelper.ps1', clean($('src-ps1').textContent));
+  setTimeout(() => dlText('Ranking-Studio-starten.cmd', clean($('src-cmd').textContent)), 700);
+  toast('Zwei Dateien — beide in denselben Ordner legen, dann Ranking-Studio-starten.cmd starten');
+}
+
+function setJob(clip, job) { clip.job = job; paintJob(clip); }
+
+function paintJob(clip) {
+  const row = document.querySelector('[data-clip="' + clip.id + '"]');
+  if (!row) return;
+  const j = clip.job, bar = row.querySelector('.prog'), msg = row.querySelector('.jobmsg');
+  bar.style.display = (j && j.state === 'running') ? '' : 'none';
+  bar.firstElementChild.style.width = (j && j.progress ? j.progress : 0) + '%';
+  msg.textContent = (j && j.msg) ? j.msg : '';
+  msg.style.color = (j && j.state === 'error') ? '#f87171' : 'var(--dim)';
+  const btn = row.querySelector('.load');
+  if (btn) { btn.disabled = !!(j && j.state === 'running'); btn.textContent = (j && j.state === 'running') ? '…' : 'Laden'; }
+}
+
+async function loadLink(clip, url) {
+  url = (url || '').trim();
+  if (!url) return;
+  clip.link = url;
+  if (clip.job && clip.job.state === 'running') return;
+
+  if (!helper.ok) { await checkHelper(); }
+  if (!helper.ok) return setJob(clip, { state: 'error', msg: 'Helfer läuft nicht — Start.cmd im Ordner ranking-helper starten' });
+  if (!helper.ytdlp) return setJob(clip, { state: 'error', msg: 'yt-dlp fehlt — Helfer neu starten und mit J bestätigen' });
+
+  setJob(clip, { state: 'running', progress: 0, msg: 'Link wird analysiert …' });
+
+  let id;
+  try {
+    const r = await fetch(API + '/fetch', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const j = await r.json();
+    if (j.error) return setJob(clip, { state: 'error', msg: j.error });
+    id = j.id;
+    if (j.cached) setJob(clip, { state: 'running', progress: 100, msg: 'Bereits geladen — wird übernommen' });
+  } catch (e) { checkHelper(); return setJob(clip, { state: 'error', msg: 'Helfer nicht erreichbar — läuft das Fenster noch?' }); }
+
+  for (;;) {
+    await sleep(700);
+    let s;
+    try { s = await (await fetch(API + '/job?id=' + id)).json(); }
+    catch (e) { checkHelper(); return setJob(clip, { state: 'error', msg: 'Verbindung zum Helfer verloren' }); }
+
+    if (s.state === 'running') {
+      const p = s.progress || 0;
+      setJob(clip, { state: 'running', progress: p, msg: p > 0 ? 'Lädt … ' + p.toFixed(0) + '%' : 'Lädt …' });
+      continue;
+    }
+    if (s.state === 'error') return setJob(clip, { state: 'error', msg: s.error || 'Download fehlgeschlagen' });
+    if (s.state === 'done') return pullMedia(clip, id, s.title);
+    return setJob(clip, { state: 'error', msg: 'Job unbekannt — Helfer neu gestartet?' });
+  }
+}
+
+async function pullMedia(clip, id, title) {
+  setJob(clip, { state: 'running', progress: 0, msg: 'Wird übertragen …' });
+  try {
+    const r = await fetch(API + '/media?id=' + id);
+    if (!r.ok) throw new Error('media ' + r.status);
+    const len = +r.headers.get('content-length') || 0;
+    const reader = r.body.getReader();
+    const parts = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); got += value.length;
+      if (len) {
+        const p = got / len * 100;
+        setJob(clip, { state: 'running', progress: p, msg: 'Wird übertragen … ' + p.toFixed(0) + '%' });
+      }
+    }
+    const blob = new Blob(parts, { type: 'video/mp4' });
+    if (title && !clip.label) clip.label = String(title).slice(0, 42);
+    attachBlob(clip, blob, (title ? String(title).slice(0, 60) : 'clip') + '.mp4');
+    setJob(clip, null);
+  } catch (e) {
+    setJob(clip, { state: 'error', msg: 'Übertragung fehlgeschlagen' });
+  }
+}
+
+async function loadLinksBulk(list) {
+  const free = S.clips.filter(c => !c.video);
+  if (!free.length) return toast('Alle Plätze sind schon belegt');
+  for (let i = 0; i < list.length && i < free.length; i++) {
+    await loadLink(free[i], list[i]);
+  }
+  if (list.length > free.length) toast((list.length - free.length) + ' Link(s) übrig — mehr Plätze wählen');
+}
+
+function makeThumb(clip) {
+  const v = clip.video; if (!v) return;
+  const t = Math.min(clip.trimStart + .1, Math.max(0, (clip.duration || 1) - .1));
+  const snap = () => {
+    try {
+      const c2 = document.createElement('canvas'); c2.width = 88; c2.height = 88;
+      const x = c2.getContext('2d');
+      const s = Math.max(88 / v.videoWidth, 88 / v.videoHeight);
+      x.drawImage(v, (88 - v.videoWidth * s) / 2, (88 - v.videoHeight * s) / 2, v.videoWidth * s, v.videoHeight * s);
+      clip.thumb = c2.toDataURL('image/jpeg', .7);
+      renderClips();
+    } catch (e) {}
+  };
+  if (playing) return;
+  v.addEventListener('seeked', snap, { once: true });
+  try { v.currentTime = t; } catch (e) {}
+}
+
+function bulkLoad(files) {
+  const vids = [...files].filter(f => f.type.startsWith('video'));
+  let i = 0;
+  for (const c of S.clips) { if (i >= vids.length) break; if (!c.video) attachFile(c, vids[i++]); }
+  if (i < vids.length) toast((vids.length - i) + ' Datei(en) übrig — mehr Plätze wählen');
+}
+
+/* =====================================================================
+   PERSISTENCE
+   ===================================================================== */
+function serialize() {
+  return {
+    ...S,
+    clips: S.clips.map(c => ({ id: c.id, rank: c.rank, label: c.label, link: c.link || '', trimStart: c.trimStart, len: c.len })),
+    order: S.order
+  };
+}
+function save() { try { localStorage.setItem('rankingStudio', JSON.stringify(serialize())); } catch (e) {} }
+
+function applyData(d) {
+  const files = new Map(S.clips.map(c => [c.rank, c]));
+  Object.assign(S, DEF(), d);
+  S.clips = (d.clips || []).map(c => {
+    const old = files.get(c.rank);
+    return { ...c, video: old ? old.video : null, url: old ? old.url : '', fileName: old ? old.fileName : '', duration: old ? old.duration : 0, thumb: old ? old.thumb : '' };
+  });
+  if (!S.clips.length) makeClips(S.rankCount);
+  S.order = (d.order || []).filter(id => S.clips.some(c => c.id === id));
+  S.clips.forEach(c => { if (!S.order.includes(c.id)) S.order.push(c.id); });
+  segIdx = 0;
+  syncInputs(); renderAll();
+}
+
+function syncInputs() {
+  $('title').value = S.title;
+  $('paint').value = S.paint;
+  $('titleSize').value = S.titleSize; $('titleSizeV').textContent = S.titleSize;
+  $('titlePos').value = S.titlePos;
+  $('titleBg').value = S.titleBg;
+  $('titleUpper').checked = S.titleUpper;
+  $('rankCount').value = S.rankCount;
+  $('clipLen').value = S.clipLen; $('clipLenV').textContent = (+S.clipLen).toFixed(1) + 's';
+  $('accent').value = S.accent;
+  $('watermark').value = S.watermark;
+  $('revealNames').checked = S.revealNames;
+  $('hideFuture').checked = S.hideFuture;
+  $('volVideo').value = S.volVideo * 100; $('volVideoV').textContent = Math.round(S.volVideo * 100);
+  $('volMusic').value = S.volMusic * 100; $('volMusicV').textContent = Math.round(S.volMusic * 100);
+  document.querySelectorAll('#listOrder button').forEach(b => b.classList.toggle('on', b.dataset.v === S.listOrder));
+  document.querySelectorAll('#fitMode button').forEach(b => b.classList.toggle('on', b.dataset.v === S.fitMode));
+}
+function renderAll() { renderSwatches(); renderChips(); renderClips(); renderOrder(); }
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+/* =====================================================================
+   EVENTS
+   ===================================================================== */
+const bind = (id, ev, fn) => $(id).addEventListener(ev, fn);
+
+bind('title', 'input', e => { S.title = e.target.value; renderChips(); save(); });
+bind('paint', 'input', e => { S.paint = e.target.value; renderSwatches(); });
+bind('titleSize', 'input', e => { S.titleSize = +e.target.value; $('titleSizeV').textContent = S.titleSize; save(); });
+bind('titlePos', 'change', e => { S.titlePos = e.target.value; save(); });
+bind('titleBg', 'change', e => { S.titleBg = e.target.value; save(); });
+bind('titleUpper', 'change', e => { S.titleUpper = e.target.checked; renderChips(); save(); });
+
+bind('rankCount', 'change', e => {
+  makeClips(+e.target.value); S.rankCount = +e.target.value;
+  segIdx = 0; renderAll(); save();
+});
+
+bind('clipLen', 'input', e => { S.clipLen = +e.target.value; $('clipLenV').textContent = S.clipLen.toFixed(1) + 's'; save(); });
+bind('applyLen', 'click', () => {
+  S.clips.forEach(c => c.len = c.duration ? Math.min(S.clipLen, Math.max(.5, c.duration - c.trimStart)) : S.clipLen);
+  renderClips(); save(); toast('Länge auf alle Clips angewendet');
+});
+bind('accent', 'input', e => { S.accent = e.target.value; save(); });
+bind('watermark', 'input', e => { S.watermark = e.target.value; save(); });
+bind('revealNames', 'change', e => { S.revealNames = e.target.checked; save(); });
+bind('hideFuture', 'change', e => { S.hideFuture = e.target.checked; save(); });
+bind('volVideo', 'input', e => { S.volVideo = e.target.value / 100; $('volVideoV').textContent = e.target.value; syncVolumes(); save(); });
+bind('volMusic', 'input', e => { S.volMusic = e.target.value / 100; $('volMusicV').textContent = e.target.value; syncVolumes(); save(); });
+
+document.querySelectorAll('#listOrder button').forEach(b => b.onclick = () => {
+  S.listOrder = b.dataset.v; syncInputs(); save();
+});
+document.querySelectorAll('#fitMode button').forEach(b => b.onclick = () => {
+  S.fitMode = b.dataset.v; syncInputs(); save();
+});
+
+document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+  const p = b.dataset.preset;
+  if (p === 'countdown') S.order = [...S.clips].sort((a, z) => z.rank - a.rank).map(c => c.id);
+  if (p === 'up') S.order = [...S.clips].sort((a, z) => a.rank - z.rank).map(c => c.id);
+  if (p === 'random') S.order = [...S.order].sort(() => Math.random() - .5);
+  segIdx = 0; renderOrder(); save();
+});
+
+$('bulkDrop').onclick = () => { $('fBulk').value = ''; $('fBulk').click(); };
+['dragover', 'dragenter'].forEach(ev => $('bulkDrop').addEventListener(ev, e => { e.preventDefault(); $('bulkDrop').classList.add('drop'); }));
+['dragleave', 'drop'].forEach(ev => $('bulkDrop').addEventListener(ev, () => $('bulkDrop').classList.remove('drop')));
+$('bulkDrop').addEventListener('drop', e => { e.preventDefault(); bulkLoad(e.dataTransfer.files); });
+
+$('fBulk').onchange = e => bulkLoad(e.target.files);
+
+$('btnExtract').onclick = saveHelperFiles;
+
+$('bulkLinkGo').onclick = () => {
+  const list = $('bulkLinkInput').value.split('\n').map(s => s.trim()).filter(s => /^https?:\/\//.test(s));
+  if (!list.length) return toast('Keine gültigen Links gefunden');
+  $('bulkLinkInput').value = '';
+  loadLinksBulk(list);
+};
+$('fSingle').onchange = e => { const c = getClip(pickTarget); if (c && e.target.files[0]) attachFile(c, e.target.files[0]); };
+
+$('musicPick').onclick = () => { $('fMusic').value = ''; $('fMusic').click(); };
+$('fMusic').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  ensureAudio();
+  if (musicEl) { musicEl.pause(); musicEl.remove(); }
+  musicEl = document.createElement('audio');
+  musicEl.src = URL.createObjectURL(f); musicEl.loop = true;
+  $('vidPool').appendChild(musicEl);
+  const src = actx.createMediaElementSource(musicEl);
+  musicGain = actx.createGain(); musicGain.gain.value = S.volMusic;
+  src.connect(musicGain); musicGain.connect(master);
+  $('musicName').textContent = f.name;
+};
+$('musicClear').onclick = () => {
+  if (musicEl) { musicEl.pause(); musicEl.remove(); musicEl = null; }
+  $('musicName').textContent = 'Keine Datei';
+};
+
+bind('btnPlay', 'click', () => playing ? pause() : play());
+bind('btnStop', 'click', () => { finishExport(); stopAll(); });
+bind('btnPrev', 'click', () => goto(segIdx - 1, playing));
+bind('btnNext', 'click', () => goto(segIdx + 1 >= SEGS().length ? 0 : segIdx + 1, playing));
+bind('btnExport', 'click', startExport);
+
+$('scrub').onclick = async e => {
+  const t = total(); if (!t) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  let target = clamp((e.clientX - r.left) / r.width, 0, .999) * t;
+  const segs = SEGS();
+  for (let i = 0; i < segs.length; i++) {
+    if (target < segLen(segs[i])) {
+      const wasPlaying = playing;
+      await goto(i, false);
+      if (segs[i].video) await seek(segs[i].video, segs[i].trimStart + target);
+      else { vOff = target; vStart = performance.now(); }
+      if (wasPlaying) play();
+      return;
+    }
+    target -= segLen(segs[i]);
+  }
+};
+
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $('studio').hidden = b.dataset.tab !== 'studio';
+  $('guide').hidden = b.dataset.tab !== 'guide';
+});
+
+bind('btnSave', 'click', () => {
+  const blob = new Blob([JSON.stringify(serialize(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'ranking-projekt.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+});
+bind('btnLoad', 'click', () => { $('fProject').value = ''; $('fProject').click(); });
+$('fProject').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { try { applyData(JSON.parse(t)); toast('Projekt geladen'); } catch (err) { toast('Datei nicht lesbar'); } });
+};
+bind('btnReset', 'click', () => {
+  S.clips.forEach(c => { if (c.url) URL.revokeObjectURL(c.url); if (c.video) c.video.remove(); });
+  S = DEF(); makeClips(5);
+  S.order = [...S.clips].sort((a, b) => b.rank - a.rank).map(c => c.id);
+  segIdx = 0; localStorage.removeItem('rankingStudio');
+  syncInputs(); renderAll();
+});
+
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+  if (e.code === 'ArrowRight') goto(segIdx + 1 >= SEGS().length ? 0 : segIdx + 1, playing);
+  if (e.code === 'ArrowLeft') goto(segIdx - 1, playing);
+});
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+try {
+  const saved = localStorage.getItem('rankingStudio');
+  if (saved) {
+    const d = JSON.parse(saved);
+    Object.assign(S, d);
+    makeClips(S.rankCount);
+    S.order = (d.order && d.order.length) ? d.order.filter(id => S.clips.some(c => c.id === id)) : S.order;
+    S.clips.forEach((c, i) => {
+      const m = (d.clips || [])[i];
+      if (m) {
+        c.label = m.label || '';
+        c.link = m.link || '';
+        c.trimStart = m.trimStart || 0;
+        c.len = m.len || S.clipLen;
+      }
+      if (!S.order.includes(c.id)) S.order.push(c.id);
+    });
+  }
+} catch (e) {}
+
+syncInputs(); renderAll(); tick();
+checkHelper();
+setInterval(checkHelper, 10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+RANKING STUDIO - LOKALER HELFER
+================================
+
+Dieser Ordner ist optional.
+--------------------------
+RankingStudio.html enthaelt RankingHelper.ps1 und Ranking-Studio-starten.cmd
+als Text. Klick im Studio in Box 2 auf "Helfer speichern" und beide entstehen
+neu - egal wo. Dieser Ordner kann also jederzeit geloescht werden.
+
+
+Wozu ueberhaupt ein Helfer?
+---------------------------
+Ein Browser darf keine Programme starten und kann YouTube-, TikTok- oder
+Instagram-Links nicht selbst laden: dahinter steckt keine Videodatei,
+sondern signierte Streamfragmente ohne CORS-Freigabe. Der Helfer laeuft
+deshalb ausserhalb des Browsers, laedt per yt-dlp herunter und reicht die
+fertige Datei an das Studio durch.
+
+Alles bleibt auf diesem Rechner. Es wird nichts hochgeladen.
+
+
+Benutzen
+--------
+1. Ranking-Studio-starten.cmd doppelklicken. Die Datei liegt eine Ebene
+   hoeher, neben RankingStudio.html - sie findet den Helfer auch dort.
+
+   Beim allerersten Mal fragt er, ob er die beiden Werkzeuge laden darf:
+     yt-dlp   ca. 17 MB   von https://github.com/yt-dlp/yt-dlp
+     ffmpeg   ca. 80 MB   von https://github.com/BtbN/FFmpeg-Builds
+   Mit J bestaetigen. Beides landet nur in
+     %LOCALAPPDATA%\RankingStudio\bin
+   Keine Adminrechte, keine Systeminstallation, keine Registry-Eintraege.
+   Zum Loeschen reicht es, diesen Ordner zu entfernen.
+
+2. RankingStudio.html oeffnen - per Doppelklick oder ueber
+   http://127.0.0.1:8787 . Beides funktioniert, der Helfer wird in beiden
+   Faellen gefunden.
+
+3. Oben rechts muss "Helfer bereit" stehen. Dann Link in ein Clip-Feld
+   einfuegen und auf "Laden" klicken.
+
+4. Das schwarze Konsolenfenster offen lassen, solange du arbeitest.
+   Beenden mit Strg+C oder Fenster schliessen.
+
+
+Wenn etwas klemmt
+-----------------
+Zweimal gestartet? Kein Problem - der zweite Start merkt, dass der Helfer
+schon laeuft, oeffnet nur das Studio und beendet sich wieder.
+
+Port 8787 von einem anderen Programm belegt:
+   powershell -ExecutionPolicy Bypass -File RankingHelper.ps1 -Port 8790
+
+Werkzeuge aktualisieren:
+   powershell -ExecutionPolicy Bypass -File RankingHelper.ps1 -Setup
+
+Download schlaegt fehl:
+   - Instagram und private Videos verlangen oft eine Anmeldung.
+   - yt-dlp veraltet? Siehe -Setup oben.
+   - Die genaue Meldung steht im Konsolenfenster und im Studio unter
+     dem betroffenen Clip.
+
+Geladene Videos liegen in:
+   %LOCALAPPDATA%\RankingStudio\downloads
+   Derselbe Link wird nie zweimal geladen. Ordner kann man jederzeit leeren.
+
+
+Hinweis
+-------
+Downloads von YouTube und TikTok verstossen gegen deren Nutzungsbedingungen.
+Die Entscheidung liegt bei dir.

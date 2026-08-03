@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ranking Studio</title>
+
+<!--
+  Einstiegspunkt. Diese Datei tut nichts ausser weiterleiten - sie ist
+  aus zwei Gruenden da:
+
+  1. GitHub Pages liefert unter der nackten Adresse des Repos immer
+     index.html aus. Ohne diese Datei landet man dort auf einer 404.
+  2. Doppelklick im Ordner: fuehrt genauso zum Studio.
+
+  Das Studio selbst bleibt bewusst RankingStudio.html - unter diesem
+  Namen sucht der lokale Helfer die Datei, und so steht es in der
+  Anleitung und in der LIESMICH.
+-->
+<meta http-equiv="refresh" content="0; url=RankingStudio.html">
+<link rel="canonical" href="RankingStudio.html">
+
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #05070f; color: #8b9bba;
+    font: 14px/1.7 "Segoe UI", system-ui, sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+  }
+  b { color: #e8eef9; font-size: 17px; letter-spacing: .04em; }
+  a { color: #34d399; }
+</style>
+</head>
+<body>
+  <b>RANKING STUDIO</b>
+  <p>wird geoeffnet &hellip;</p>
+  <p><a href="RankingStudio.html">Falls nichts passiert: hier entlang</a></p>
+
+  <!-- replace() statt href: so bleibt der Zurueck-Knopf brauchbar und
+       springt nicht in die Weiterleitung zurueck. -->
+  <script>location.replace('RankingStudio.html');</script>
+</body>
+</html>
