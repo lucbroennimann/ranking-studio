@@ -20,6 +20,8 @@ if not exist "%PS%" (
   exit /b 1
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PS%"
+rem %* reicht Schalter durch, etwa -NoBrowser fuer den Autostart oder
+rem -Port 8790, falls 8787 schon belegt ist.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS%" %*
 echo.
 pause
