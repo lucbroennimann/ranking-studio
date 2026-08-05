@@ -36,7 +36,8 @@ doppelklicken. Beim ersten Mal fragt er, ob er `yt-dlp` (17 MB) und
 `ffmpeg` (80 MB) laden darf; beides landet nur in
 `%LOCALAPPDATA%\RankingStudio\bin`, ohne Adminrechte und ohne Registry.
 
-**Einrichten, macOS:** einmalig
+**Einrichten, macOS:** Schritt für Schritt steht es in der
+[Anleitung für den Mac](ANLEITUNG-MAC.md). Kurzfassung: einmalig
 [PowerShell 7](https://github.com/PowerShell/PowerShell/releases)
 installieren — `brew install --cask powershell`. Für volle Auflösung
 zusätzlich `brew install ffmpeg`; ohne ffmpeg lädt yt-dlp meist nur bis
