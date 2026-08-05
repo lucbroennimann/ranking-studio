@@ -13,7 +13,7 @@ keine CDN, keine Abhängigkeiten — eine einzelne HTML-Datei.
 | --- | --- |
 | **[lucbroennimann.github.io/ranking-studio](https://lucbroennimann.github.io/ranking-studio/)** | nur den Link — läuft auf jedem Rechner |
 | **`RankingStudio.html` doppelklicken** | den Ordner lokal |
-| **`Ranking-Studio-starten.cmd` doppelklicken** | startet zusätzlich den Helfer und öffnet das Studio gleich mit |
+| **`Ranking-Studio-starten.cmd`** (Windows) bzw. **`.command`** (macOS, Linux) | startet zusätzlich den Helfer und öffnet das Studio gleich mit |
 
 Videodateien per Drag & Drop funktionieren in allen drei Fällen sofort.
 Für **Links** (YouTube, TikTok, Instagram) muss der Helfer laufen — auch
@@ -27,32 +27,53 @@ laden: dahinter steckt keine Videodatei, sondern signierte Streamfragmente
 ohne CORS-Freigabe. Der Helfer erledigt das deshalb außerhalb des Browsers
 per `yt-dlp` und reicht die fertige Datei durch. Alles bleibt lokal.
 
-Einrichten: im Studio in Box 2 auf **Helfer speichern** klicken — es
-entstehen `RankingHelper.ps1` und `Ranking-Studio-starten.cmd`. Beide in
-denselben Ordner legen, `.cmd` doppelklicken. Beim ersten Mal fragt er, ob
-er `yt-dlp` (17 MB) und `ffmpeg` (80 MB) laden darf; beides landet nur in
+Er läuft unter **Windows, macOS und Linux** — bewusst als eine einzige
+Datei, zwei Fassungen wären nach der ersten Änderung auseinandergelaufen.
+Nur die Starter sind getrennt, weil `.cmd` und `bash` sich nicht vertragen.
+
+**Einrichten, Windows:** ZIP entpacken, `Ranking-Studio-starten.cmd`
+doppelklicken. Beim ersten Mal fragt er, ob er `yt-dlp` (17 MB) und
+`ffmpeg` (80 MB) laden darf; beides landet nur in
 `%LOCALAPPDATA%\RankingStudio\bin`, ohne Adminrechte und ohne Registry.
+
+**Einrichten, macOS:** einmalig
+[PowerShell 7](https://github.com/PowerShell/PowerShell/releases)
+installieren — `brew install --cask powershell`. Für volle Auflösung
+zusätzlich `brew install ffmpeg`; ohne ffmpeg lädt yt-dlp meist nur bis
+720p. Dann `Ranking-Studio-starten.command` doppelklicken. Kommt die Datei
+nicht aus dem ZIP, sondern über **Helfer speichern**, fehlt ihr das
+Ausführungsrecht — einmalig im Terminal:
+
+```
+chmod +x Ranking-Studio-starten.command
+```
+
+`yt-dlp` holt er sich selbst (36 MB), abgelegt unter
+`~/Library/Application Support/RankingStudio/bin`.
 
 ## Dateien
 
 ```
-index.html                    Weiterleitung — Einstiegspunkt für GitHub Pages
-RankingStudio.html            das Studio, eigenständig
-Ranking-Studio-starten.cmd    startet Helfer + Studio
+index.html                      Weiterleitung — Einstiegspunkt für GitHub Pages
+RankingStudio.html              das Studio, eigenständig
+Ranking-Studio-starten.cmd      startet Helfer + Studio (Windows)
+Ranking-Studio-starten.command  dasselbe für macOS und Linux
 ranking-helper/
-  RankingHelper.ps1           lokaler Server auf 127.0.0.1:8787
-  Einbetten.ps1               spielt die Helfer-Dateien in die HTML ein
-  LIESMICH.txt                ausführlichere Anleitung zum Helfer
+  RankingHelper.ps1             lokaler Server auf 127.0.0.1:8787, alle Systeme
+  Einbetten.ps1                 spielt die drei Dateien in die HTML ein
+  LIESMICH.txt                  ausführlichere Anleitung zum Helfer
 ```
 
 ## Wartung
 
 Zwei Dinge, die man leicht übersieht:
 
-1. **`RankingHelper.ps1` muss reines ASCII bleiben.** PowerShell 5.1 liest
-   `.ps1` ohne BOM als ANSI — Umlaute zerlegen dann den Parser. Für
-   `Ranking-Studio-starten.cmd` gilt dasselbe wegen der OEM-Codepage von
-   `cmd.exe`. `Einbetten.ps1` prüft beides und bricht sonst ab.
+1. **Alle drei Dateien müssen reines ASCII bleiben.** PowerShell 5.1 liest
+   `.ps1` ohne BOM als ANSI, `cmd.exe` liest `.cmd` in der OEM-Codepage,
+   und ein bash-Skript hängt an der Locale des fremden Rechners — Umlaute
+   zerlegen dort Parser oder Ausgabe. `Einbetten.ps1` prüft das und bricht
+   sonst ab. Die Zeilenenden nagelt `.gitattributes` fest: `.command`
+   braucht reine LF, sonst stolpert bash über das `\r`.
 2. **Helfer und HTML dürfen nicht auseinanderlaufen.** Der Helfer steckt
    als Klartext-Kopie in `RankingStudio.html` (`<script type="text/plain">`),
    damit der Knopf „Helfer speichern" ohne weiteren Download auskommt. Nach

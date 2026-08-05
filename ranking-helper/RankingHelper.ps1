@@ -9,6 +9,10 @@
   Alles bleibt auf diesem Rechner. Es wird nichts hochgeladen.
   Beenden mit Strg+C oder Fenster schliessen.
 
+  Laeuft unter Windows PowerShell 5.1 und unter PowerShell 7 auf
+  macOS und Linux. Bewusst eine einzige Datei: zwei Fassungen waeren
+  nach der ersten Aenderung auseinandergelaufen.
+
   Aufrufe:
     RankingHelper.ps1                 normaler Start
     RankingHelper.ps1 -Setup          yt-dlp und ffmpeg aktualisieren
@@ -23,13 +27,34 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$VERSION = '1.1'
+$VERSION = '1.2'
 
-$YTDLP_URL  = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+# ---------------------------------------------------------------- System
+# PowerShell 5.1 kennt $IsWindows nicht - dort existiert die Variable
+# schlicht nicht, und das kann nur Windows bedeuten. Ab PowerShell 6
+# ist sie gesetzt und sagt die Wahrheit.
+$OnWindows = (-not (Test-Path variable:IsWindows)) -or $IsWindows
+$OnMac     = (Test-Path variable:IsMacOS) -and $IsMacOS
+$ExeExt    = if ($OnWindows) { '.exe' } else { '' }
+
+$YTDLP_URL = if ($OnWindows) {
+  'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+} elseif ($OnMac) {
+  'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos'
+} else {
+  'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux'
+}
+$YTDLP_MB   = if ($OnWindows) { 17 } else { 37 }
 $FFMPEG_URL = 'https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip'
 
 # ---------------------------------------------------------------- Pfade
-$Root    = Join-Path $env:LOCALAPPDATA 'RankingStudio'
+$Root = if ($OnWindows) {
+  Join-Path $env:LOCALAPPDATA 'RankingStudio'
+} elseif ($OnMac) {
+  Join-Path $HOME 'Library/Application Support/RankingStudio'
+} else {
+  Join-Path $HOME '.local/share/RankingStudio'
+}
 $BinDir  = Join-Path $Root 'bin'
 $DownDir = Join-Path $Root 'downloads'
 $MemoPth = Join-Path $Root 'html-pfad.txt'
@@ -37,11 +62,29 @@ New-Item -ItemType Directory -Force -Path $BinDir  | Out-Null
 New-Item -ItemType Directory -Force -Path $DownDir | Out-Null
 
 function Find-Tool([string]$name) {
-  $local = Join-Path $BinDir "$name.exe"
+  $local = Join-Path $BinDir ($name + $ExeExt)
   if (Test-Path $local) { return $local }
-  $cmd = Get-Command "$name.exe" -ErrorAction SilentlyContinue
+  $cmd = Get-Command ($name + $ExeExt) -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
+  # Homebrew liegt je nach Mac an zwei Orten und steht nicht zwingend
+  # im PATH, wenn der Helfer nicht aus einer Login-Shell heraus startet.
+  if (-not $OnWindows) {
+    foreach ($d in @('/opt/homebrew/bin', '/usr/local/bin', '/usr/bin')) {
+      $p = Join-Path $d $name
+      if (Test-Path $p) { return $p }
+    }
+  }
   return $null
+}
+
+function Open-Browser([string]$url) {
+  try {
+    if ($OnWindows) { Start-Process $url | Out-Null }
+    elseif ($OnMac) { & '/usr/bin/open' $url }
+    else            { & 'xdg-open' $url }
+  } catch {
+    Write-Host "  Bitte selbst oeffnen: $url" -ForegroundColor DarkGray
+  }
 }
 
 function Find-Html {
@@ -49,7 +92,7 @@ function Find-Html {
   if ($Html) { $cands += $Html }
   $cands += (Join-Path $PSScriptRoot 'RankingStudio.html')
   $cands += (Join-Path (Split-Path $PSScriptRoot -Parent) 'RankingStudio.html')
-  $cands += (Join-Path $env:USERPROFILE 'Downloads\RankingStudio.html')
+  $cands += (Join-Path $HOME 'Downloads/RankingStudio.html')
   if (Test-Path $MemoPth) {
     try { $cands += ([IO.File]::ReadAllText($MemoPth)).Trim() } catch { }
   }
@@ -72,13 +115,25 @@ function Confirm-Yes([string]$frage) {
 
 function Install-Ytdlp {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  Write-Host "  yt-dlp wird geladen (ca. 17 MB) ..." -ForegroundColor Cyan
+  $ziel = Join-Path $BinDir ('yt-dlp' + $ExeExt)
+  Write-Host ("  yt-dlp wird geladen (ca. {0} MB) ..." -f $YTDLP_MB) -ForegroundColor Cyan
   Write-Host "  Quelle: $YTDLP_URL" -ForegroundColor DarkGray
-  Invoke-WebRequest -Uri $YTDLP_URL -OutFile (Join-Path $BinDir 'yt-dlp.exe') -UseBasicParsing
+  Invoke-WebRequest -Uri $YTDLP_URL -OutFile $ziel -UseBasicParsing
+  # Heruntergeladenes ist ausserhalb von Windows erst einmal nicht
+  # ausfuehrbar. Die Datei stammt von hier, nicht aus dem Browser -
+  # ein Gatekeeper-Vermerk haengt also nicht daran.
+  if (-not $OnWindows) { & '/bin/chmod' '+x' $ziel }
   Write-Host "  yt-dlp fertig." -ForegroundColor Green
 }
 
 function Install-Ffmpeg {
+  if (-not $OnWindows) {
+    Write-Host ""
+    Write-Host "  Fuer ffmpeg gibt es hier kein fertiges Paket zum Mitladen." -ForegroundColor Yellow
+    Write-Host "  Empfohlen:  brew install ffmpeg" -ForegroundColor Cyan
+    Write-Host "  Ohne ffmpeg laedt yt-dlp meist nur bis 720p, sonst aendert sich nichts." -ForegroundColor DarkGray
+    return
+  }
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   Write-Host "  ffmpeg wird geladen (ca. 80 MB, dauert einen Moment) ..." -ForegroundColor Cyan
   Write-Host "  Quelle: $FFMPEG_URL" -ForegroundColor DarkGray
@@ -116,6 +171,12 @@ function Ensure-Tools {
     }
   }
   if ((Find-Tool 'yt-dlp') -and -not (Find-Tool 'ffmpeg')) {
+    if (-not $OnWindows) {
+      # Ausserhalb von Windows gibt es nichts zum Mitladen - Install-Ffmpeg
+      # nennt dort nur den Weg ueber Homebrew und fragt nichts.
+      Install-Ffmpeg
+      return
+    }
     Write-Host ""
     Write-Host "  ffmpeg fehlt. Ohne ffmpeg laedt yt-dlp meist nur bis 720p." -ForegroundColor Yellow
     if (Confirm-Yes 'ffmpeg ebenfalls laden? (ca. 80 MB)') {
@@ -273,7 +334,7 @@ if (Test-Running $Port) {
   Write-Host "  Der Helfer laeuft bereits - es wird nur das Studio geoeffnet." -ForegroundColor Green
   Write-Host "  $base"
   Write-Host ""
-  if (-not $NoBrowser) { Start-Process $base | Out-Null }
+  if (-not $NoBrowser) { Open-Browser $base }
   Start-Sleep -Seconds 2
   exit 0
 }
@@ -299,15 +360,17 @@ $FALLBACK = @"
 <!doctype html><meta charset="utf-8"><title>Ranking-Helfer</title>
 <body style="background:#05070f;color:#e8eef9;font-family:Segoe UI,system-ui,sans-serif;padding:44px;line-height:1.7">
 <h1 style="color:#34d399">Helfer laeuft</h1>
-<p>Die Datei <b>RankingStudio.html</b> liegt nicht neben diesem Skript und wurde auch sonst nicht gefunden.</p>
-<p>Das ist kein Problem: oeffne <b>RankingStudio.html</b> einfach per Doppelklick.
-Die Seite findet den Helfer von selbst und zeigt oben rechts <b>Helfer bereit</b>.</p>
-<p style="color:#8b9bba">Soll die Seite auch von hier kommen, lege RankingStudio.html neben RankingHelper.ps1 und starte neu.</p>
+<p>Er wartet auf das Studio. Die Datei <b>RankingStudio.html</b> liegt nicht neben diesem Skript.</p>
+<p style="font-size:18px"><a href="https://lucbroennimann.github.io/ranking-studio/" style="color:#34d399">Studio hier oeffnen</a></p>
+<p>Die Seite findet diesen Helfer von selbst und zeigt oben rechts <b>Helfer bereit</b>.</p>
+<p style="color:#8b9bba">Hast du das Studio lokal, tut es auch der Doppelklick auf RankingStudio.html.
+Liegt die Datei neben RankingHelper.ps1, kommt sie beim naechsten Start direkt von hier.</p>
 </body>
 "@
 
 Write-Host ""
 Write-Host "  ---------------------------------------------"
+Write-Host ("  System    : {0}" -f $(if ($OnWindows) { 'Windows' } elseif ($OnMac) { 'macOS' } else { 'Linux' }))
 Write-Host "  Adresse   : $base"
 Write-Host ("  yt-dlp    : {0}" -f $(if ($ytdlp)  { 'bereit' } else { 'fehlt - Link-Import inaktiv' }))
 Write-Host ("  ffmpeg    : {0}" -f $(if ($ffmpeg) { 'bereit' } else { 'fehlt - meist nur bis 720p' }))
@@ -317,7 +380,7 @@ Write-Host "  ---------------------------------------------"
 Write-Host "  Fenster offen lassen. Beenden mit Strg+C." -ForegroundColor DarkGray
 Write-Host ""
 
-if (-not $NoBrowser -and $HtmlPath) { Start-Process $base | Out-Null }
+if (-not $NoBrowser -and $HtmlPath) { Open-Browser $base }
 
 try {
   while ($listener.IsListening) {

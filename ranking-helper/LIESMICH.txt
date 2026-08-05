@@ -19,10 +19,28 @@ fertige Datei an das Studio durch.
 Alles bleibt auf diesem Rechner. Es wird nichts hochgeladen.
 
 
+Der Helfer laeuft ueberall
+--------------------------
+RankingHelper.ps1 ist eine einzige Datei fuer Windows, macOS und Linux.
+Nur die Starter sind getrennt, weil .cmd und bash sich nicht vertragen:
+
+   Windows        Ranking-Studio-starten.cmd
+   macOS, Linux   Ranking-Studio-starten.command
+
+Ausserhalb von Windows wird PowerShell 7 vorausgesetzt:
+   brew install --cask powershell
+Und fuer volle Aufloesung ffmpeg, das es dort nicht zum Mitladen gibt:
+   brew install ffmpeg
+
+Kommt der .command-Starter nicht aus dem ZIP, sondern ueber den Knopf
+"Helfer speichern", fehlt ihm das Ausfuehrungsrecht. Einmalig:
+   chmod +x Ranking-Studio-starten.command
+
+
 Benutzen
 --------
-1. Ranking-Studio-starten.cmd doppelklicken. Die Datei liegt eine Ebene
-   hoeher, neben RankingStudio.html - sie findet den Helfer auch dort.
+1. Den Starter doppelklicken. Er liegt eine Ebene hoeher, neben
+   RankingStudio.html - findet den Helfer aber auch dort.
 
    Beim allerersten Mal fragt er, ob er die beiden Werkzeuge laden darf:
      yt-dlp   ca. 17 MB   von https://github.com/yt-dlp/yt-dlp

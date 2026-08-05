@@ -1,7 +1,7 @@
 #requires -version 5.1
 <#
-  Spielt RankingHelper.ps1 und Ranking-Studio-starten.cmd als Klartext
-  in RankingStudio.html ein.
+  Spielt RankingHelper.ps1 und die beiden Starter als Klartext in
+  RankingStudio.html ein.
 
   Immer ausfuehren, nachdem eine der beiden Dateien geaendert wurde -
   sonst laufen Datei und eingebettete Fassung auseinander und der
@@ -32,15 +32,23 @@ function Splice([string]$text, [string]$id, [string]$content) {
   return $text.Substring(0, $from) + $content + $text.Substring($j)
 }
 
-# Der Starter liegt eine Ebene hoeher, neben RankingStudio.html: dieselbe
-# Datei muss auch dort funktionieren, wo der Browser sie hinspeichert.
+# Die Starter liegen eine Ebene hoeher, neben RankingStudio.html:
+# dieselbe Datei muss auch dort funktionieren, wo der Browser sie
+# hinspeichert. Zwei davon, weil .cmd und bash sich nicht vertragen.
+$oben = Split-Path $PSScriptRoot -Parent
 $ps1 = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'RankingHelper.ps1'), [Text.Encoding]::UTF8)
-$cmd = [IO.File]::ReadAllText((Join-Path (Split-Path $PSScriptRoot -Parent) 'Ranking-Studio-starten.cmd'), [Text.Encoding]::UTF8)
+$cmd = [IO.File]::ReadAllText((Join-Path $oben 'Ranking-Studio-starten.cmd'), [Text.Encoding]::UTF8)
+$sh  = [IO.File]::ReadAllText((Join-Path $oben 'Ranking-Studio-starten.command'), [Text.Encoding]::UTF8)
 
-$dateien = @(@('RankingHelper.ps1', $ps1), @('Ranking-Studio-starten.cmd', $cmd))
+$dateien = @(
+  @('RankingHelper.ps1',              $ps1),
+  @('Ranking-Studio-starten.cmd',     $cmd),
+  @('Ranking-Studio-starten.command', $sh)
+)
 
-# Beide muessen reines ASCII bleiben: PowerShell 5.1 liest .ps1-Dateien
-# ohne BOM als ANSI und cmd.exe .cmd in der OEM-Codepage - Umlaute
+# Alle drei muessen reines ASCII bleiben: PowerShell 5.1 liest .ps1
+# ohne BOM als ANSI, cmd.exe liest .cmd in der OEM-Codepage, und ein
+# bash-Skript haengt an der Locale des fremden Rechners. Umlaute
 # zerlegen dort den Parser bzw. die Ausgabe.
 foreach ($paar in $dateien) {
   $n = ($paar[1].ToCharArray() | Where-Object { [int]$_ -gt 127 }).Count
@@ -57,11 +65,11 @@ $null = [ScriptBlock]::Create($ps1)   # Syntaxpruefung
 $t = [IO.File]::ReadAllText($Html, [Text.Encoding]::UTF8)
 $t = Splice $t 'src-ps1' $ps1
 $t = Splice $t 'src-cmd' $cmd
+$t = Splice $t 'src-sh'  $sh
 [IO.File]::WriteAllText($Html, $t, (New-Object Text.UTF8Encoding($false)))
 
 Write-Host ""
 Write-Host "  Eingebettet in $Html" -ForegroundColor Green
-Write-Host ("  RankingHelper.ps1         : {0:N0} Zeichen" -f $ps1.Length)
-Write-Host ("  Ranking-Studio-starten.cmd: {0:N0} Zeichen" -f $cmd.Length)
-Write-Host ("  HTML jetzt                : {0:N0} KB" -f ((Get-Item $Html).Length / 1KB))
+foreach ($paar in $dateien) { Write-Host ("  {0,-30}: {1:N0} Zeichen" -f $paar[0], $paar[1].Length) }
+Write-Host ("  {0,-30}: {1:N0} KB" -f 'HTML jetzt', ((Get-Item $Html).Length / 1KB))
 Write-Host ""

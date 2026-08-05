@@ -453,9 +453,14 @@ kbd{background:#16203a;border:1px solid var(--line2);border-bottom-width:2px;bor
   <h2 style="margin-top:30px;font-size:17px">Link-Import einrichten</h2>
   <p class="hint">Ein Browser kann YouTube-, TikTok- oder Instagram-Links nicht selbst laden: dahinter steckt keine Videodatei, sondern signierte Streamfragmente ohne CORS-Freigabe. Und starten darf eine Webseite ohnehin kein Programm. Der Helfer erledigt das deshalb außerhalb des Browsers und reicht die fertige Datei durch. <b>Sein kompletter Quelltext steckt in dieser HTML-Datei</b> — es gibt nichts weiter herunterzuladen.</p>
   <ol>
-    <li>In Box&nbsp;2 auf <b>Helfer speichern</b> klicken. Es werden zwei Dateien gespeichert: <code>RankingHelper.ps1</code> und <code>Ranking-Studio-starten.cmd</code>. Beide in denselben Ordner legen — welcher, ist egal.</li>
-    <li><b>Ranking-Studio-starten.cmd</b> doppelklicken. Beim allerersten Mal fragt er, ob er <code>yt-dlp</code> (17 MB) und <code>ffmpeg</code> (80 MB) laden darf — mit <kbd>J</kbd> bestätigen. Beides landet nur in <code>%LOCALAPPDATA%\RankingStudio\bin</code>, ohne Adminrechte und ohne Systeminstallation.</li>
-    <li>Das schwarze Konsolenfenster offen lassen, solange du arbeitest. Diese Seite neu laden — oben rechts steht dann <b>Helfer bereit</b>.</li>
+    <li>In Box&nbsp;2 auf <b>Helfer speichern</b> klicken. Es werden zwei Dateien gespeichert: <code>RankingHelper.ps1</code> und der zu deinem System passende Starter. Beide in denselben Ordner legen — welcher, ist egal.</li>
+    <li>Den Starter ausführen. Beim allerersten Mal fragt er, ob er <code>yt-dlp</code> laden darf — mit <kbd>J</kbd> bestätigen. Es landet nur im Benutzerordner, ohne Adminrechte und ohne Systeminstallation.
+      <ul>
+        <li><b>Windows:</b> <code>Ranking-Studio-starten.cmd</code> doppelklicken. <code>ffmpeg</code> (80 MB) bietet er gleich mit an.</li>
+        <li><b>macOS, Linux:</b> einmalig <code>chmod +x Ranking-Studio-starten.command</code> im Terminal, dann doppelklicken. Vorausgesetzt wird <a href="https://github.com/PowerShell/PowerShell/releases">PowerShell&nbsp;7</a> (<code>brew install --cask powershell</code>); für volle Auflösung zusätzlich <code>brew install ffmpeg</code>.</li>
+      </ul>
+    </li>
+    <li>Das Konsolenfenster offen lassen, solange du arbeitest. Diese Seite neu laden — oben rechts steht dann <b>Helfer bereit</b>.</li>
     <li>Link in ein Clip-Feld einfügen, auf <b>Laden</b> klicken. Fertig.</li>
   </ol>
   <p class="hint" style="margin-top:14px">Es ist egal, ob du diese Seite per Doppelklick öffnest oder über <code>http://127.0.0.1:8787</code> — der Helfer wird in beiden Fällen gefunden.</p>
@@ -483,8 +488,9 @@ kbd{background:#16203a;border:1px solid var(--line2);border-bottom-width:2px;bor
      Eingebetteter Helfer. Wird nie ausgeführt, nur als Text gespeichert.
 
      WARTUNG — wichtig:
-     Der Inhalt der beiden Blöcke ist eine wortgleiche Kopie von
-     ranking-helper/RankingHelper.ps1 bzw. Ranking-Studio-starten.cmd.
+     Der Inhalt der drei Blöcke ist eine wortgleiche Kopie von
+     ranking-helper/RankingHelper.ps1 sowie Ranking-Studio-starten.cmd
+     und -.command (Windows bzw. macOS/Linux).
      Wer eine dieser Dateien ändert, muss die Kopie hier ersetzen, sonst
      laufen Datei und eingebettete Fassung auseinander. Einspielen mit
      ranking-helper/Einbetten.ps1 — dort wird literal gespleisst, nicht
@@ -505,6 +511,10 @@ kbd{background:#16203a;border:1px solid var(--line2);border-bottom-width:2px;bor
   Alles bleibt auf diesem Rechner. Es wird nichts hochgeladen.
   Beenden mit Strg+C oder Fenster schliessen.
 
+  Laeuft unter Windows PowerShell 5.1 und unter PowerShell 7 auf
+  macOS und Linux. Bewusst eine einzige Datei: zwei Fassungen waeren
+  nach der ersten Aenderung auseinandergelaufen.
+
   Aufrufe:
     RankingHelper.ps1                 normaler Start
     RankingHelper.ps1 -Setup          yt-dlp und ffmpeg aktualisieren
@@ -519,13 +529,34 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$VERSION = '1.1'
+$VERSION = '1.2'
 
-$YTDLP_URL  = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+# ---------------------------------------------------------------- System
+# PowerShell 5.1 kennt $IsWindows nicht - dort existiert die Variable
+# schlicht nicht, und das kann nur Windows bedeuten. Ab PowerShell 6
+# ist sie gesetzt und sagt die Wahrheit.
+$OnWindows = (-not (Test-Path variable:IsWindows)) -or $IsWindows
+$OnMac     = (Test-Path variable:IsMacOS) -and $IsMacOS
+$ExeExt    = if ($OnWindows) { '.exe' } else { '' }
+
+$YTDLP_URL = if ($OnWindows) {
+  'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+} elseif ($OnMac) {
+  'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos'
+} else {
+  'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux'
+}
+$YTDLP_MB   = if ($OnWindows) { 17 } else { 37 }
 $FFMPEG_URL = 'https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip'
 
 # ---------------------------------------------------------------- Pfade
-$Root    = Join-Path $env:LOCALAPPDATA 'RankingStudio'
+$Root = if ($OnWindows) {
+  Join-Path $env:LOCALAPPDATA 'RankingStudio'
+} elseif ($OnMac) {
+  Join-Path $HOME 'Library/Application Support/RankingStudio'
+} else {
+  Join-Path $HOME '.local/share/RankingStudio'
+}
 $BinDir  = Join-Path $Root 'bin'
 $DownDir = Join-Path $Root 'downloads'
 $MemoPth = Join-Path $Root 'html-pfad.txt'
@@ -533,11 +564,29 @@ New-Item -ItemType Directory -Force -Path $BinDir  | Out-Null
 New-Item -ItemType Directory -Force -Path $DownDir | Out-Null
 
 function Find-Tool([string]$name) {
-  $local = Join-Path $BinDir "$name.exe"
+  $local = Join-Path $BinDir ($name + $ExeExt)
   if (Test-Path $local) { return $local }
-  $cmd = Get-Command "$name.exe" -ErrorAction SilentlyContinue
+  $cmd = Get-Command ($name + $ExeExt) -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
+  # Homebrew liegt je nach Mac an zwei Orten und steht nicht zwingend
+  # im PATH, wenn der Helfer nicht aus einer Login-Shell heraus startet.
+  if (-not $OnWindows) {
+    foreach ($d in @('/opt/homebrew/bin', '/usr/local/bin', '/usr/bin')) {
+      $p = Join-Path $d $name
+      if (Test-Path $p) { return $p }
+    }
+  }
   return $null
+}
+
+function Open-Browser([string]$url) {
+  try {
+    if ($OnWindows) { Start-Process $url | Out-Null }
+    elseif ($OnMac) { & '/usr/bin/open' $url }
+    else            { & 'xdg-open' $url }
+  } catch {
+    Write-Host "  Bitte selbst oeffnen: $url" -ForegroundColor DarkGray
+  }
 }
 
 function Find-Html {
@@ -545,7 +594,7 @@ function Find-Html {
   if ($Html) { $cands += $Html }
   $cands += (Join-Path $PSScriptRoot 'RankingStudio.html')
   $cands += (Join-Path (Split-Path $PSScriptRoot -Parent) 'RankingStudio.html')
-  $cands += (Join-Path $env:USERPROFILE 'Downloads\RankingStudio.html')
+  $cands += (Join-Path $HOME 'Downloads/RankingStudio.html')
   if (Test-Path $MemoPth) {
     try { $cands += ([IO.File]::ReadAllText($MemoPth)).Trim() } catch { }
   }
@@ -568,13 +617,25 @@ function Confirm-Yes([string]$frage) {
 
 function Install-Ytdlp {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  Write-Host "  yt-dlp wird geladen (ca. 17 MB) ..." -ForegroundColor Cyan
+  $ziel = Join-Path $BinDir ('yt-dlp' + $ExeExt)
+  Write-Host ("  yt-dlp wird geladen (ca. {0} MB) ..." -f $YTDLP_MB) -ForegroundColor Cyan
   Write-Host "  Quelle: $YTDLP_URL" -ForegroundColor DarkGray
-  Invoke-WebRequest -Uri $YTDLP_URL -OutFile (Join-Path $BinDir 'yt-dlp.exe') -UseBasicParsing
+  Invoke-WebRequest -Uri $YTDLP_URL -OutFile $ziel -UseBasicParsing
+  # Heruntergeladenes ist ausserhalb von Windows erst einmal nicht
+  # ausfuehrbar. Die Datei stammt von hier, nicht aus dem Browser -
+  # ein Gatekeeper-Vermerk haengt also nicht daran.
+  if (-not $OnWindows) { & '/bin/chmod' '+x' $ziel }
   Write-Host "  yt-dlp fertig." -ForegroundColor Green
 }
 
 function Install-Ffmpeg {
+  if (-not $OnWindows) {
+    Write-Host ""
+    Write-Host "  Fuer ffmpeg gibt es hier kein fertiges Paket zum Mitladen." -ForegroundColor Yellow
+    Write-Host "  Empfohlen:  brew install ffmpeg" -ForegroundColor Cyan
+    Write-Host "  Ohne ffmpeg laedt yt-dlp meist nur bis 720p, sonst aendert sich nichts." -ForegroundColor DarkGray
+    return
+  }
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   Write-Host "  ffmpeg wird geladen (ca. 80 MB, dauert einen Moment) ..." -ForegroundColor Cyan
   Write-Host "  Quelle: $FFMPEG_URL" -ForegroundColor DarkGray
@@ -612,6 +673,12 @@ function Ensure-Tools {
     }
   }
   if ((Find-Tool 'yt-dlp') -and -not (Find-Tool 'ffmpeg')) {
+    if (-not $OnWindows) {
+      # Ausserhalb von Windows gibt es nichts zum Mitladen - Install-Ffmpeg
+      # nennt dort nur den Weg ueber Homebrew und fragt nichts.
+      Install-Ffmpeg
+      return
+    }
     Write-Host ""
     Write-Host "  ffmpeg fehlt. Ohne ffmpeg laedt yt-dlp meist nur bis 720p." -ForegroundColor Yellow
     if (Confirm-Yes 'ffmpeg ebenfalls laden? (ca. 80 MB)') {
@@ -769,7 +836,7 @@ if (Test-Running $Port) {
   Write-Host "  Der Helfer laeuft bereits - es wird nur das Studio geoeffnet." -ForegroundColor Green
   Write-Host "  $base"
   Write-Host ""
-  if (-not $NoBrowser) { Start-Process $base | Out-Null }
+  if (-not $NoBrowser) { Open-Browser $base }
   Start-Sleep -Seconds 2
   exit 0
 }
@@ -795,15 +862,17 @@ $FALLBACK = @"
 <!doctype html><meta charset="utf-8"><title>Ranking-Helfer</title>
 <body style="background:#05070f;color:#e8eef9;font-family:Segoe UI,system-ui,sans-serif;padding:44px;line-height:1.7">
 <h1 style="color:#34d399">Helfer laeuft</h1>
-<p>Die Datei <b>RankingStudio.html</b> liegt nicht neben diesem Skript und wurde auch sonst nicht gefunden.</p>
-<p>Das ist kein Problem: oeffne <b>RankingStudio.html</b> einfach per Doppelklick.
-Die Seite findet den Helfer von selbst und zeigt oben rechts <b>Helfer bereit</b>.</p>
-<p style="color:#8b9bba">Soll die Seite auch von hier kommen, lege RankingStudio.html neben RankingHelper.ps1 und starte neu.</p>
+<p>Er wartet auf das Studio. Die Datei <b>RankingStudio.html</b> liegt nicht neben diesem Skript.</p>
+<p style="font-size:18px"><a href="https://lucbroennimann.github.io/ranking-studio/" style="color:#34d399">Studio hier oeffnen</a></p>
+<p>Die Seite findet diesen Helfer von selbst und zeigt oben rechts <b>Helfer bereit</b>.</p>
+<p style="color:#8b9bba">Hast du das Studio lokal, tut es auch der Doppelklick auf RankingStudio.html.
+Liegt die Datei neben RankingHelper.ps1, kommt sie beim naechsten Start direkt von hier.</p>
 </body>
 "@
 
 Write-Host ""
 Write-Host "  ---------------------------------------------"
+Write-Host ("  System    : {0}" -f $(if ($OnWindows) { 'Windows' } elseif ($OnMac) { 'macOS' } else { 'Linux' }))
 Write-Host "  Adresse   : $base"
 Write-Host ("  yt-dlp    : {0}" -f $(if ($ytdlp)  { 'bereit' } else { 'fehlt - Link-Import inaktiv' }))
 Write-Host ("  ffmpeg    : {0}" -f $(if ($ffmpeg) { 'bereit' } else { 'fehlt - meist nur bis 720p' }))
@@ -813,7 +882,7 @@ Write-Host "  ---------------------------------------------"
 Write-Host "  Fenster offen lassen. Beenden mit Strg+C." -ForegroundColor DarkGray
 Write-Host ""
 
-if (-not $NoBrowser -and $HtmlPath) { Start-Process $base | Out-Null }
+if (-not $NoBrowser -and $HtmlPath) { Open-Browser $base }
 
 try {
   while ($listener.IsListening) {
@@ -957,6 +1026,52 @@ rem -Port 8790, falls 8787 schon belegt ist.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS%" %*
 echo.
 pause
+</script>
+
+<script type="text/plain" id="src-sh">#!/bin/bash
+# Ranking Studio - Helfer starten (macOS und Linux)
+#
+# Gegenstueck zu Ranking-Studio-starten.cmd unter Windows. Sucht
+# RankingHelper.ps1 neben dieser Datei oder im Unterordner
+# ranking-helper - so funktioniert dieselbe Datei an beiden Orten.
+
+cd "$(dirname "$0")" || exit 1
+
+PS="./RankingHelper.ps1"
+[ -f "$PS" ] || PS="./ranking-helper/RankingHelper.ps1"
+
+if [ ! -f "$PS" ]; then
+  echo
+  echo "  RankingHelper.ps1 wurde nicht gefunden."
+  echo "  Erwartet neben dieser Datei oder in ranking-helper/"
+  echo
+  echo "  Loesung: RankingStudio.html oeffnen, in Box 2 auf"
+  echo "  \"Helfer speichern\" klicken und beide Dateien in"
+  echo "  denselben Ordner legen wie diese hier."
+  echo
+  read -n 1 -s -r -p "  Taste zum Beenden"
+  exit 1
+fi
+
+if ! command -v pwsh >/dev/null 2>&1; then
+  echo
+  echo "  PowerShell 7 fehlt - ohne sie laeuft der Helfer nicht."
+  echo
+  echo "  Mit Homebrew:   brew install --cask powershell"
+  echo "  Sonst:          https://github.com/PowerShell/PowerShell/releases"
+  echo
+  echo "  Fuer volle Aufloesung ausserdem empfohlen:"
+  echo "                  brew install ffmpeg"
+  echo
+  read -n 1 -s -r -p "  Taste zum Beenden"
+  exit 1
+fi
+
+# "$@" reicht Schalter durch, etwa -NoBrowser oder -Port 8790.
+pwsh -NoProfile -File "$PS" "$@"
+
+echo
+read -n 1 -s -r -p "  Taste zum Beenden"
 </script>
 
 <script>
@@ -1599,11 +1714,22 @@ function dlText(name, text) {
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
+/* Der Starter unterscheidet sich je nach System, das Helferskript nicht.
+   Zeilenenden sind hier kein Schönheitsfehler: ein bash-Skript mit CRLF
+   bricht über dem \r ab, deshalb bekommt .command reine LF. */
 function saveHelperFiles() {
-  const clean = s => s.replace(/^\r?\n/, '').replace(/\r?\n/g, '\r\n');
-  dlText('RankingHelper.ps1', clean($('src-ps1').textContent));
-  setTimeout(() => dlText('Ranking-Studio-starten.cmd', clean($('src-cmd').textContent)), 700);
-  toast('Zwei Dateien — beide in denselben Ordner legen, dann Ranking-Studio-starten.cmd starten');
+  const crlf = s => s.replace(/^\r?\n/, '').replace(/\r?\n/g, '\r\n');
+  const lf   = s => s.replace(/^\r?\n/, '').replace(/\r\n/g, '\n');
+  const unix = /Mac|iPhone|iPad|Linux|X11/.test(navigator.platform || navigator.userAgent || '');
+
+  dlText('RankingHelper.ps1', crlf($('src-ps1').textContent));
+  if (unix) {
+    setTimeout(() => dlText('Ranking-Studio-starten.command', lf($('src-sh').textContent)), 700);
+    toast('Zwei Dateien in denselben Ordner. Dann im Terminal: chmod +x Ranking-Studio-starten.command');
+  } else {
+    setTimeout(() => dlText('Ranking-Studio-starten.cmd', crlf($('src-cmd').textContent)), 700);
+    toast('Zwei Dateien — beide in denselben Ordner legen, dann Ranking-Studio-starten.cmd starten');
+  }
 }
 
 function setJob(clip, job) { clip.job = job; paintJob(clip); }
