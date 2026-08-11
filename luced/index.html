@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luced AI - Video Ranking Generator</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Option A: MP4 Muxer Library (pinned: an unpinned "latest" can change API without notice) -->
+  <script src="https://unpkg.com/mp4-muxer@5.2.2/build/mp4-muxer.js"></script>
+
+  <style>
+    /* Fixed precise outline text styles */
+    .rank-number-text {
+      font-style: italic;
+      font-weight: 900;
+      text-shadow: 
+        -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+        -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000,
+        3px 3px 6px rgba(0,0,0,0.8);
+    }
+
+    .clip-title-text {
+      color: #ffffff;
+      font-weight: 900;
+      text-shadow: 
+        -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+        -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000,
+        2px 2px 4px rgba(0,0,0,0.9);
+    }
+
+    .dual-range-input {
+      pointer-events: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    
+    .dual-range-input::-webkit-slider-thumb {
+      pointer-events: auto;
+      width: 20px;
+      height: 32px;
+      border-radius: 6px;
+      background: #10b981;
+      border: 3px solid #ffffff;
+      cursor: ew-resize;
+      -webkit-appearance: none;
+      box-shadow: 0 0 8px rgba(0,0,0,0.6);
+    }
+    
+    .dual-range-input::-moz-range-thumb {
+      pointer-events: auto;
+      width: 20px;
+      height: 32px;
+      border-radius: 6px;
+      background: #10b981;
+      border: 3px solid #ffffff;
+      cursor: ew-resize;
+      box-shadow: 0 0 8px rgba(0,0,0,0.6);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    const Icon = ({ name, className }) => {
+      const svgs = {
+        'film': <><rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18"/><line x1="7" x2="7" y1="2" y2="22"/><line x1="17" x2="17" y1="2" y2="22"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="2" x2="7" y1="7" y2="7"/><line x1="2" x2="7" y1="17" y2="17"/><line x1="17" x2="22" y1="17" y2="17"/><line x1="17" x2="22" y1="7" y2="7"/></>,
+        'type': <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></>,
+        'video': <><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></>,
+        'refresh-cw': <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>,
+        'check': <polyline points="20 6 9 17 4 12"/>,
+        'shuffle': <><polyline points="16 3 21 3 21 8"/><line x1="4" x2="21" y1="20" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" x2="21" y1="15" y2="21"/><line x1="4" x2="9" y1="4" y2="9"/></>,
+        'grip-vertical': <><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></>,
+        'upload': <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>,
+        'pause': <><rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/></>,
+        'play': <polygon points="5 3 19 12 5 21 5 3"/>,
+        'download': <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>,
+        'plus-circle': <><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></>,
+        'alert-triangle': <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></>,
+        'trash-2': <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>,
+        'at-sign': <><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></>,
+        'rewind': <><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></>,
+        'fast-forward': <><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></>,
+        'square': <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+      };
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          {svgs[name]}
+        </svg>
+      );
+    };
+
+    function App() {
+      const [mainTitle, setMainTitle] = useState("");
+      const [selectedColor, setSelectedColor] = useState("#5EE0B3");
+      const [wordColors, setWordColors] = useState({});
+
+      const [watermarkUser, setWatermarkUser] = useState("");
+      const [watermarkTransparency, setWatermarkTransparency] = useState(0); 
+
+      const createInitialClips = () => [
+        { id: 'clip-1', rank: 1, label: '', url: '', source: '', status: 'idle', duration: 15, startTime: 0, endTime: 15 },
+        { id: 'clip-2', rank: 2, label: '', url: '', source: '', status: 'idle', duration: 15, startTime: 0, endTime: 15 },
+        { id: 'clip-3', rank: 3, label: '', url: '', source: '', status: 'idle', duration: 15, startTime: 0, endTime: 15 },
+        { id: 'clip-4', rank: 4, label: '', url: '', source: '', status: 'idle', duration: 15, startTime: 0, endTime: 15 },
+        { id: 'clip-5', rank: 5, label: '', url: '', source: '', status: 'idle', duration: 15, startTime: 0, endTime: 15 },
+      ];
+
+      const [clips, setClips] = useState(createInitialClips());
+      const [playbackOrder, setPlaybackOrder] = useState(['clip-1', 'clip-2', 'clip-3', 'clip-4', 'clip-5']);
+
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [currentOrderIndex, setCurrentOrderIndex] = useState(0);
+      const [globalTime, setGlobalTime] = useState(0);
+      
+      const pendingSeekRef = useRef(null);
+      const videoRefs = useRef([]); 
+
+      const [isGenerating, setIsGenerating] = useState(false);
+      const [exportProgress, setExportProgress] = useState(0);
+      const [draggedIndex, setDraggedIndex] = useState(null);
+      const [showResetModal, setShowResetModal] = useState(false);
+      const [confirmAction, setConfirmAction] = useState(null);
+
+      const currentClipId = playbackOrder[currentOrderIndex];
+      const currentClip = clips.find(c => c.id === currentClipId);
+
+      const validClipsInfo = playbackOrder.map(id => clips.find(c => c.id === id)).filter(c => c && c.url);
+      const totalDuration = validClipsInfo.reduce((acc, c) => acc + Math.max(0, c.endTime - c.startTime), 0);
+
+      // Handle Preview Player Sync
+      useEffect(() => {
+        if (isGenerating) return;
+
+        videoRefs.current.forEach((v, i) => {
+          if (!v) return;
+          if (i === currentOrderIndex) {
+            const c = clips.find(x => x.id === playbackOrder[i]);
+            if (c && c.url) {
+              if (pendingSeekRef.current !== null) {
+                v.currentTime = pendingSeekRef.current;
+                pendingSeekRef.current = null;
+              } else if (v.currentTime < c.startTime || v.currentTime >= c.endTime) {
+                v.currentTime = c.startTime;
+              }
+              if (isPlaying) {
+                v.play().catch(()=>{});
+              } else {
+                v.pause();
+              }
+            }
+          } else {
+            v.pause();
+          }
+        });
+
+        const nextIdx = (currentOrderIndex + 1) % playbackOrder.length;
+        if (videoRefs.current[nextIdx]) {
+          const nextClip = clips.find(x => x.id === playbackOrder[nextIdx]);
+          if (nextClip && nextClip.url) {
+            videoRefs.current[nextIdx].load();
+          }
+        }
+      }, [currentOrderIndex, isPlaying, playbackOrder, clips, isGenerating]);
+
+      const formatTime = (seconds) => {
+        if (!seconds || isNaN(seconds)) return "0:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+      };
+
+      const handleVideoEnded = () => {
+        let nextIdx = currentOrderIndex + 1;
+        let found = false;
+        while (nextIdx < playbackOrder.length) {
+          const c = clips.find(c => c.id === playbackOrder[nextIdx]);
+          if (c && c.url) { found = true; break; }
+          nextIdx++;
+        }
+
+        if (!found) {
+          let firstValid = 0;
+          while (firstValid < playbackOrder.length) {
+            const c = clips.find(c => c.id === playbackOrder[firstValid]);
+            if (c && c.url) break;
+            firstValid++;
+          }
+          nextIdx = firstValid < playbackOrder.length ? firstValid : 0;
+        }
+
+        if (nextIdx === currentOrderIndex) {
+           const v = videoRefs.current[currentOrderIndex];
+           if (v && currentClip) {
+               v.currentTime = currentClip.startTime;
+               if (isPlaying) v.play().catch(()=>{});
+           }
+        } else {
+           setCurrentOrderIndex(nextIdx);
+        }
+      };
+
+      const handleTimeUpdate = (idx) => {
+        if (idx !== currentOrderIndex || isGenerating) return;
+        const v = videoRefs.current[idx];
+        const c = clips.find(x => x.id === playbackOrder[idx]);
+
+        if (v && c && c.url) {
+          const ct = v.currentTime;
+          if (ct >= c.endTime - 0.05) {
+            handleVideoEnded();
+          } else {
+            let timeBefore = 0;
+            for (let i = 0; i < currentOrderIndex; i++) {
+              const pc = clips.find(x => x.id === playbackOrder[i]);
+              if (pc && pc.url) timeBefore += Math.max(0, pc.endTime - pc.startTime);
+            }
+            setGlobalTime(timeBefore + Math.max(0, ct - c.startTime));
+          }
+        }
+      };
+
+      const handleScrub = (e) => {
+        const targetTime = Number(e.target.value);
+        setGlobalTime(targetTime);
+
+        let acc = 0;
+        let foundIdx = -1;
+        let targetClipTime = 0;
+
+        for (let i = 0; i < playbackOrder.length; i++) {
+          const c = clips.find(c => c.id === playbackOrder[i]);
+          if (!c || !c.url) continue;
+          const clipDur = Math.max(0, c.endTime - c.startTime);
+
+          if (targetTime <= acc + clipDur || i === playbackOrder.length - 1) {
+            foundIdx = i;
+            targetClipTime = c.startTime + (targetTime - acc);
+            break;
+          }
+          acc += clipDur;
+        }
+
+        if (foundIdx !== -1) {
+          if (foundIdx === currentOrderIndex) {
+            if (videoRefs.current[foundIdx]) {
+              videoRefs.current[foundIdx].currentTime = targetClipTime;
+            }
+          } else {
+            pendingSeekRef.current = targetClipTime;
+            setCurrentOrderIndex(foundIdx);
+          }
+        }
+      };
+
+      const togglePlay = () => {
+        const isValid = currentClip && currentClip.url;
+        if (!isValid) {
+          const firstValid = playbackOrder.findIndex(id => {
+            const c = clips.find(c => c.id === id);
+            return c && c.url;
+          });
+          if (firstValid !== -1) {
+            setCurrentOrderIndex(firstValid);
+            setIsPlaying(true);
+          }
+          return;
+        }
+        setIsPlaying(!isPlaying);
+      };
+
+      const handleNextClip = () => {
+        let nextIdx = currentOrderIndex + 1;
+        while (nextIdx < playbackOrder.length) {
+          const c = clips.find(c => c.id === playbackOrder[nextIdx]);
+          if (c && c.url) {
+            setCurrentOrderIndex(nextIdx);
+            return;
+          }
+          nextIdx++;
+        }
+      };
+
+      const handlePrevClip = () => {
+        let prevIdx = currentOrderIndex - 1;
+        while (prevIdx >= 0) {
+          const c = clips.find(c => c.id === playbackOrder[prevIdx]);
+          if (c && c.url) {
+            setCurrentOrderIndex(prevIdx);
+            return;
+          }
+          prevIdx--;
+        }
+      };
+
+      const stopAllAudioAndVideo = () => {
+        setIsPlaying(false);
+        videoRefs.current.forEach(v => {
+          if (v) {
+            v.pause();
+            v.currentTime = 0;
+          }
+        });
+      };
+
+      const handleStopReset = () => {
+        stopAllAudioAndVideo();
+        const firstValid = playbackOrder.findIndex(id => clips.find(c => c.id === id)?.url);
+        if (firstValid !== -1) {
+          setCurrentOrderIndex(firstValid);
+          const firstClip = clips.find(c => c.id === playbackOrder[firstValid]);
+          if (firstClip && videoRefs.current[firstValid]) {
+            videoRefs.current[firstValid].currentTime = firstClip.startTime;
+          }
+        }
+        setGlobalTime(0);
+      };
+
+      const shufflePlaybackOrder = () => {
+        const shuffled = [...playbackOrder].sort(() => Math.random() - 0.5);
+        setPlaybackOrder(shuffled);
+        setCurrentOrderIndex(0);
+      };
+
+      const updateClip = (id, field, value) => {
+        setClips(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+      };
+
+      const handleFileUpload = (id, event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const fileUrl = URL.createObjectURL(file);
+        const tempVideo = document.createElement('video');
+        tempVideo.src = fileUrl;
+        tempVideo.onloadedmetadata = () => {
+          const dur = Number(tempVideo.duration.toFixed(1)) || 15;
+          setClips(prev => prev.map(c => {
+            if (c.id === id) {
+              return {
+                ...c,
+                url: fileUrl,
+                source: file.name,
+                status: 'processed',
+                duration: dur,
+                startTime: 0,
+                endTime: dur
+              };
+            }
+            return c;
+          }));
+        };
+      };
+
+      const handleBulkUpload = (event) => {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        const emptyClips = clips.filter(c => !c.url);
+        if (emptyClips.length === 0) {
+          alert("All 5 clip slots are already filled!");
+          event.target.value = '';
+          return;
+        }
+
+        const filesToProcess = files.slice(0, emptyClips.length);
+
+        filesToProcess.forEach((file, index) => {
+          const targetClip = emptyClips[index];
+          if (!targetClip) return;
+
+          const fileUrl = URL.createObjectURL(file);
+          const tempVideo = document.createElement('video');
+          tempVideo.src = fileUrl;
+          tempVideo.onloadedmetadata = () => {
+            const dur = Number(tempVideo.duration.toFixed(1)) || 15;
+            setClips(prev => prev.map(c => {
+              if (c.id === targetClip.id) {
+                return {
+                  ...c,
+                  url: fileUrl,
+                  source: file.name,
+                  status: 'processed',
+                  duration: dur,
+                  startTime: 0,
+                  endTime: dur
+                };
+              }
+              return c;
+            }));
+          };
+        });
+
+        event.target.value = '';
+      };
+
+      const requestClearClip = (id) => setConfirmAction({ type: 'clear', clipId: id });
+
+      const handleConfirmAction = () => {
+        if (!confirmAction) return;
+
+        if (confirmAction.type === 'clear') {
+          stopAllAudioAndVideo();
+          setClips(prev => prev.map(c => {
+            if (c.id === confirmAction.clipId) {
+              return {
+                ...c,
+                label: '',
+                url: '',
+                source: '',
+                status: 'idle',
+                duration: 15,
+                startTime: 0,
+                endTime: 15
+              };
+            }
+            return c;
+          }));
+        }
+        setConfirmAction(null);
+      };
+
+      const handleResetProject = () => {
+        stopAllAudioAndVideo();
+        setMainTitle("");
+        setWordColors({});
+        setWatermarkUser("");
+        setWatermarkTransparency(0);
+        setClips(createInitialClips());
+        setPlaybackOrder(['clip-1', 'clip-2', 'clip-3', 'clip-4', 'clip-5']);
+        setCurrentOrderIndex(0);
+        setShowResetModal(false);
+      };
+
+      const handleDragStart = (e, index) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+      };
+
+      const handleDragOver = (e) => e.preventDefault();
+
+      const handleDragEnter = (e, targetIndex) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+        const newOrder = [...playbackOrder];
+        const draggedItem = newOrder[draggedIndex];
+        newOrder.splice(draggedIndex, 1);
+        newOrder.splice(targetIndex, 0, draggedItem);
+
+        setPlaybackOrder(newOrder);
+        setDraggedIndex(targetIndex);
+      };
+
+      const handleDragEnd = () => setDraggedIndex(null);
+
+      const toggleWordColor = (globalWordIdx) => {
+        setWordColors(prev => {
+          const current = prev[globalWordIdx];
+          if (current === selectedColor) {
+            const copy = { ...prev };
+            delete copy[globalWordIdx];
+            return copy;
+          }
+          return { ...prev, [globalWordIdx]: selectedColor };
+        });
+      };
+
+      // ==========================================
+      // OPTION A: ARCHITECTURE IMPLEMENTATION
+      // OFFLINE MP4 ENCODING ENGINE + AUDIO
+      // ==========================================
+
+      // The preview inherits the page font, while the export canvas fell back
+      // to plain "sans-serif" and drew every caption in another typeface,
+      // about 15% wider. Resolved once per export, used for all canvas text.
+      const exportFont = useRef('sans-serif');
+      const exportTracking = useRef({ title: 0, rank: 0, label: 0, watermark: 0 });
+      const exportTitle = useRef({ bar: 333, padTop: 68, padBottom: 41, font: 89, lineStep: 111, lines: null });
+
+      // A title too long for one line wraps in the preview but used to run off
+      // the edge on export, because the canvas draws a line in one go and knows
+      // no wrapping. Rather than guess the break, the preview is asked: every
+      // word sits in its own inline-block span, so the browser has already
+      // worked out where the lines fall. Grouping those spans by their top edge
+      // gives the exact same breaks - and keeps the line count equal to the one
+      // the measured bar height already stands for.
+      const readTitleLines = (heading, linePx) => {
+        if (!heading || heading.children.length === 0) return null;
+        const gap = Math.max(1, linePx * 0.5);
+        const lines = [];
+        let wordIdx = 0;
+
+        // One child per hard line break; each of those may wrap several times.
+        Array.from(heading.children).forEach((row) => {
+          const spans = row.querySelectorAll('span');
+          if (spans.length === 0) {
+            lines.push([]);
+            return;
+          }
+          let current = null;
+          let top = null;
+          spans.forEach((span) => {
+            const rect = span.getBoundingClientRect();
+            // An empty word has no box to place, so it never opens a line of
+            // its own - it only has to keep the colour count in step.
+            const empty = rect.width <= 0 || !span.textContent;
+            if (!current || (!empty && top !== null && Math.abs(rect.top - top) > gap)) {
+              current = [];
+              lines.push(current);
+            }
+            if (!empty) top = rect.top;
+            current.push({ text: span.textContent, idx: wordIdx });
+            wordIdx++;
+          });
+        });
+
+        return lines.length > 0 ? lines : null;
+      };
+
+      // The title bar cannot be pinned to a number: in the preview it grows
+      // with every line of the title. Bar, padding, font and line height are
+      // therefore measured off the live preview and scaled to 1920 high.
+      const readTitleStyle = () => {
+        const fallback = { bar: 333, padTop: 68, padBottom: 41, font: 89, lineStep: 111, lines: null };
+        const heading = document.querySelector('h2');
+        const bar = heading && heading.parentElement;
+        const area = bar && bar.parentElement; // the 9:16 area the export stands for
+        if (!bar || !area) return fallback;
+
+        const areaHeight = area.getBoundingClientRect().height;
+        const barHeight = bar.getBoundingClientRect().height;
+        if (areaHeight <= 0 || barHeight <= 0) return fallback;
+
+        const scale = 1920 / areaHeight;
+        const barStyle = getComputedStyle(bar);
+        const headStyle = getComputedStyle(heading);
+        const fontPx = parseFloat(headStyle.fontSize) || 26;
+        // line-height comes back either as px or as a bare multiplier
+        const rawLine = parseFloat(headStyle.lineHeight);
+        const linePx = !rawLine ? fontPx * 1.25 : (rawLine < 4 ? rawLine * fontPx : rawLine);
+
+        return {
+          bar: Math.round(barHeight * scale),
+          padTop: Math.round((parseFloat(barStyle.paddingTop) || 0) * scale),
+          padBottom: Math.round((parseFloat(barStyle.paddingBottom) || 0) * scale),
+          font: Math.round(fontPx * scale),
+          lineStep: Math.round(linePx * scale),
+          lines: readTitleLines(heading, linePx)
+        };
+      };
+
+      // Tailwind's tracking-* classes add letter spacing that the canvas knows
+      // nothing about. Read off the live preview and kept as a share of the
+      // font size, so it scales to whatever size the export draws at.
+      // A freshly built probe element would not do: Tailwind over the CDN only
+      // writes a rule once the class shows up in the page, so a brand new node
+      // still measures as unspaced. Hence the real elements, with Tailwind's
+      // own values standing in for whatever is not on screen right now.
+      const readTracking = (selector, fallbackShare) => {
+        const el = document.querySelector(selector);
+        if (!el) return fallbackShare;
+        const style = getComputedStyle(el);
+        const size = parseFloat(style.fontSize) || 0;
+        if (size <= 0) return fallbackShare;
+        const spacing = style.letterSpacing === 'normal' ? 0 : (parseFloat(style.letterSpacing) || 0);
+        return spacing / size;
+      };
+
+      const applyTracking = (ctx, share, fontPx) => {
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${(share * fontPx).toFixed(2)}px`;
+      };
+
+      const readPreviewFont = () => {
+        const probe = document.querySelector('.rank-number-text') || document.body;
+        const family = (getComputedStyle(probe).fontFamily || '').trim();
+        if (!family) return 'sans-serif';
+        // A family the canvas cannot parse is dropped without a word, leaving
+        // the 10px default behind, so try it out before trusting it.
+        const test = document.createElement('canvas').getContext('2d');
+        test.font = `900 42px ${family}`;
+        return test.font.indexOf('42px') !== -1 ? family : 'sans-serif';
+      };
+
+      const loadScriptOnce = (src) => new Promise((resolve, reject) => {
+        const tag = document.createElement('script');
+        tag.src = src;
+        tag.crossOrigin = 'anonymous';
+        tag.onload = () => resolve();
+        tag.onerror = () => reject(new Error('Could not load ' + src));
+        document.head.appendChild(tag);
+      });
+
+      // unpkg is sometimes blocked or slow; try a mirror before giving up.
+      const ensureMuxer = async () => {
+        if (window.Mp4Muxer) return true;
+        const mirrors = [
+          'https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js',
+          'https://unpkg.com/mp4-muxer@5.2.2/build/mp4-muxer.js'
+        ];
+        for (const src of mirrors) {
+          try {
+            await loadScriptOnce(src);
+            if (window.Mp4Muxer) return true;
+          } catch (err) {
+            console.warn(err);
+          }
+        }
+        return false;
+      };
+
+      // Chrome's software H.264 encoder only does baseline profile, so a fixed
+      // High profile string fails on every machine without an H.264 chip.
+      const pickVideoConfig = async (width, height, framerate) => {
+        const codecs = [
+          'avc1.640028', 'avc1.64002A', 'avc1.4D0028',
+          'avc1.4D002A', 'avc1.42E028', 'avc1.42E02A'
+        ];
+        for (const codec of codecs) {
+          const config = { codec, width, height, bitrate: 5000000, framerate };
+          try {
+            const check = await VideoEncoder.isConfigSupported(config);
+            if (check && check.supported) return check.config || config;
+          } catch (err) {
+            // Unsupported profile, try the next one.
+          }
+        }
+        return null;
+      };
+
+      const pickAudioConfig = async (sampleRate, numberOfChannels) => {
+        if (typeof window.AudioEncoder === 'undefined') return null;
+        const config = { codec: 'mp4a.40.2', sampleRate, numberOfChannels, bitrate: 128000 };
+        try {
+          const check = await AudioEncoder.isConfigSupported(config);
+          if (check && check.supported) return check.config || config;
+        } catch (err) {
+          // No AAC encoder: the export still runs, just without sound.
+        }
+        return null;
+      };
+
+      const waitForEncoder = async (encoder, limit) => {
+        while (encoder.encodeQueueSize > limit) {
+          await new Promise(resolve => {
+            const onDequeue = () => {
+              clearTimeout(timer);
+              encoder.removeEventListener('dequeue', onDequeue);
+              resolve();
+            };
+            const timer = setTimeout(onDequeue, 200);
+            encoder.addEventListener('dequeue', onDequeue);
+          });
+        }
+      };
+
+      const loadExportVideo = (clip) => new Promise((resolve, reject) => {
+        const name = clip.source || clip.label || `Rank #${clip.rank}`;
+        const video = document.createElement('video');
+        let settled = false;
+
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          reject(new Error(`Clip "${name}" took too long to load.`));
+        }, 60000);
+
+        video.onloadeddata = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(video);
+        };
+        video.onerror = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(new Error(`Clip "${name}" cannot be read for export. Please upload the file again.`));
+        };
+
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        video.src = clip.url;
+        video.load();
+      });
+
+      // Every frame is fetched by seeking, so nothing is dropped no matter how
+      // slow the encoder runs. Waits for 'seeked', which tabs never throttle.
+      const seekExportVideo = (video, time) => new Promise((resolve) => {
+        if (Math.abs(video.currentTime - time) < 0.001) {
+          resolve();
+          return;
+        }
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          video.removeEventListener('seeked', done);
+          resolve();
+        };
+        const timer = setTimeout(done, 5000);
+        video.addEventListener('seeked', done);
+        try {
+          video.currentTime = time;
+        } catch (err) {
+          done();
+        }
+      });
+
+      const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // Revoking right away can cancel a download that has not started yet.
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      };
+
+      const clipName = (clip) => clip.source || clip.label || `Rank #${clip.rank}`;
+
+      // Some files play back perfectly but refuse to decode in one piece: an
+      // unusual audio codec, or simply a very large file. Then the sound is
+      // taken the slow way, by playing the cut once and recording what leaves
+      // the clip. Nothing is audible - the graph never reaches the speakers.
+      const captureAudioLive = async (clip) => {
+        if (typeof window.MediaRecorder === 'undefined') return null;
+        const duration = Math.max(0, clip.endTime - clip.startTime);
+        if (duration <= 0) return null;
+
+        const video = await loadExportVideo(clip);
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+          const source = audioCtx.createMediaElementSource(video);
+          const destination = audioCtx.createMediaStreamDestination();
+          source.connect(destination);
+
+          const recorder = new MediaRecorder(destination.stream);
+          const parts = [];
+          recorder.ondataavailable = (e) => { if (e.data && e.data.size) parts.push(e.data); };
+          const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+          await seekExportVideo(video, clip.startTime);
+          try { await audioCtx.resume(); } catch (err) {}
+          video.muted = false;
+          recorder.start();
+          await video.play();
+
+          await new Promise(resolve => {
+            const check = () => {
+              if (video.currentTime >= clip.endTime - 0.02 || video.ended) resolve();
+              else setTimeout(check, 50);
+            };
+            check();
+          });
+
+          video.pause();
+          recorder.stop();
+          await stopped;
+
+          const blob = new Blob(parts, { type: recorder.mimeType || 'audio/webm' });
+          if (!blob.size) return null;
+          return await audioCtx.decodeAudioData(await blob.arrayBuffer());
+        } finally {
+          try { await audioCtx.close(); } catch (err) {}
+          video.pause();
+          video.removeAttribute('src');
+          video.load();
+        }
+      };
+
+      // One continuous audio track for the whole ranking, rendered offline.
+      // Reports back which clips stayed silent instead of hiding it.
+      const renderExportAudio = async (validClips, totalSecs, sampleRate) => {
+        const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        if (!OfflineCtx) return null;
+
+        const totalSamples = Math.max(1, Math.round(totalSecs * sampleRate));
+        const offlineCtx = new OfflineCtx(2, totalSamples, sampleRate);
+        const silentClips = [];
+        let offset = 0;
+
+        for (const clip of validClips) {
+          const clipDur = Math.max(0, clip.endTime - clip.startTime);
+          const name = clipName(clip);
+          let buffer = null;
+          let from = clip.startTime;
+
+          try {
+            const response = await fetch(clip.url);
+            const arrayBuffer = await response.arrayBuffer();
+            buffer = await offlineCtx.decodeAudioData(arrayBuffer);
+          } catch (err) {
+            console.warn(`Audio of "${name}" does not decode in one piece, recording it instead.`, err);
+            try {
+              buffer = await captureAudioLive(clip);
+              from = 0; // the recording already covers exactly the cut part
+            } catch (err2) {
+              console.warn(`Live audio capture failed for "${name}".`, err2);
+            }
+          }
+
+          let placed = false;
+          if (buffer) {
+            const start = Math.min(Math.max(0, from), buffer.duration);
+            const take = Math.max(0, Math.min(clipDur, buffer.duration - start));
+            if (take > 0.05) {
+              const source = offlineCtx.createBufferSource();
+              source.buffer = buffer;
+              source.connect(offlineCtx.destination);
+              source.start(offset, start, take);
+              placed = true;
+            }
+          }
+          if (!placed) silentClips.push(name);
+
+          offset += clipDur;
+        }
+
+        return { buffer: await offlineCtx.startRendering(), silentClips };
+      };
+
+      const reportSilentClips = (silentClips) => {
+        if (!silentClips || silentClips.length === 0) return;
+        alert('The video was exported, but these clips carry no sound: '
+          + silentClips.join(', ')
+          + '.\n\nThey either have no audio track at all, or the browser cannot read their audio.');
+      };
+
+      // The finished 1080x1920 picture: cropped clip plus every overlay.
+      const drawExportFrame = (ctx, video, orderIdx, width, height) => {
+        // DRAW BACKGROUND / CROPPED VIDEO
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, width, height);
+
+        if (video && video.readyState >= 2) {
+          const vWidth = video.videoWidth || 0;
+          const vHeight = video.videoHeight || 0;
+          if (vWidth > 0 && vHeight > 0) {
+            const vAspect = vWidth / vHeight;
+            const targetAspect = width / height;
+            let sx, sy, sWidth, sHeight;
+            if (vAspect > targetAspect) {
+              sHeight = vHeight;
+              sWidth = vHeight * targetAspect;
+              sx = (vWidth - sWidth) / 2;
+              sy = 0;
+            } else {
+              sWidth = vWidth;
+              sHeight = vWidth / targetAspect;
+              sx = 0;
+              sy = (vHeight - sHeight) / 2;
+            }
+            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, width, height);
+          }
+        }
+
+        // DRAW TOP TITLE BOX
+        const titleStyle = exportTitle.current;
+        ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        ctx.fillRect(0, 0, width, titleStyle.bar);
+
+        if (mainTitle.trim()) {
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = `900 ${titleStyle.font}px ${exportFont.current}`;
+          applyTracking(ctx, exportTracking.current.title, titleStyle.font);
+          // Lines as the preview broke them. Without a reading off the preview
+          // only the hard line breaks are known, which is where this stood
+          // before - long lines then run off the edge, as they used to.
+          let wordIdx = 0;
+          const lines = titleStyle.lines || mainTitle.split('\n').map(
+            line => line.split(' ').map(word => ({ text: word, idx: wordIdx++ }))
+          );
+          // The preview centres the lines between the bar's padding. Mirroring
+          // that keeps one-, two- and three-line titles all sitting right.
+          const inner = titleStyle.bar - titleStyle.padTop - titleStyle.padBottom;
+          const blockTop = titleStyle.padTop + ((inner - lines.length * titleStyle.lineStep) / 2);
+          lines.forEach((words, lineI) => {
+            const totalLineWidth = ctx.measureText(words.map(w => w.text).join(' ').toUpperCase()).width;
+            let currentX = (width - totalLineWidth) / 2;
+            const yPos = blockTop + (titleStyle.lineStep * (lineI + 0.5));
+
+            words.forEach((word) => {
+              const color = wordColors[word.idx] || '#FFFFFF';
+              ctx.fillStyle = color;
+              const uppercaseWord = word.text.toUpperCase();
+              ctx.fillText(uppercaseWord, currentX + (ctx.measureText(uppercaseWord).width / 2), yPos);
+              currentX += ctx.measureText(uppercaseWord + ' ').width;
+            });
+          });
+        }
+
+        // DRAW RANKS & TITLES
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        const rankColors = { 1: '#FFD700', 2: '#C0C0C0', 3: '#CD7F32', 4: '#A0A0A0', 5: '#707070' };
+        [1, 2, 3, 4, 5].forEach((rankNum) => {
+          const item = clips.find(c => c.rank === rankNum);
+          const itemOrderIdx = playbackOrder.findIndex(id => id === item?.id);
+          const hasBeenShown = itemOrderIdx !== -1 && itemOrderIdx <= orderIdx;
+
+          // Every figure below is the preview measured and scaled to 1080
+          // wide: rows 44px apart, first row at 31% of the height, numbers at
+          // 20px, names at 12px. That way the export is what the preview shows.
+          const yPos = 621 + ((rankNum - 1) * 148);
+
+          ctx.font = `italic 900 67px ${exportFont.current}`;
+          applyTracking(ctx, exportTracking.current.rank, 67);
+          ctx.fillStyle = rankColors[rankNum];
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 8;
+          ctx.lineJoin = 'round';
+          ctx.strokeText(`${rankNum}.`, 45, yPos);
+          ctx.fillText(`${rankNum}.`, 45, yPos);
+
+          if (hasBeenShown && item?.label) {
+            ctx.font = `900 42px ${exportFont.current}`;
+            applyTracking(ctx, exportTracking.current.label, 42);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            // Shared baseline would hang the smaller name off the number's
+            // foot; lifting it centres both the way the preview does.
+            const labelY = yPos - 9;
+            // Keep user-entered casing for clip names on export
+            ctx.strokeText(item.label, 142, labelY);
+            ctx.fillText(item.label, 142, labelY);
+          }
+        });
+
+        // DRAW WATERMARK
+        if (watermarkUser.trim() && watermarkTransparency < 100) {
+          ctx.save();
+          ctx.globalAlpha = 1 - (watermarkTransparency / 100);
+          // Same 12px text-xs as the clip names in the preview, so same size.
+          ctx.font = `900 42px ${exportFont.current}`;
+          applyTracking(ctx, exportTracking.current.watermark, 42);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 6;
+          ctx.lineJoin = 'round';
+          ctx.textAlign = 'right';
+          ctx.strokeText(`@${watermarkUser.trim()}`, 1020, 1850);
+          ctx.fillText(`@${watermarkUser.trim()}`, 1020, 1850);
+          ctx.restore();
+        }
+      };
+
+      // Main path: render offline, encode with WebCodecs, mux a real MP4.
+      const exportWithWebCodecs = async (validClips, totalSecs, audioConfig) => {
+        const fps = 30;
+        const width = 1080;
+        const height = 1920;
+        const sampleRate = 44100;
+
+        const videoConfig = await pickVideoConfig(width, height, fps);
+        if (!videoConfig) {
+          throw new Error('This browser cannot encode H.264 video at 1080x1920.');
+        }
+
+        setExportProgress(5);
+        const audio = audioConfig ? await renderExportAudio(validClips, totalSecs, sampleRate) : null;
+        const audioBuffer = audio && audio.buffer;
+        setExportProgress(15);
+
+        const muxerOptions = {
+          target: new window.Mp4Muxer.ArrayBufferTarget(),
+          video: { codec: 'avc', width, height, frameRate: fps },
+          fastStart: 'in-memory'
+        };
+        if (audioBuffer) {
+          muxerOptions.audio = {
+            codec: 'aac',
+            numberOfChannels: audioBuffer.numberOfChannels,
+            sampleRate
+          };
+        }
+        const muxer = new window.Mp4Muxer.Muxer(muxerOptions);
+
+        // Encoder errors arrive asynchronously; keep the first one and raise it.
+        let failure = null;
+        const videoEncoder = new VideoEncoder({
+          output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+          error: (err) => { failure = failure || err; }
+        });
+        videoEncoder.configure(videoConfig);
+
+        let audioEncoder = null;
+        if (audioBuffer) {
+          audioEncoder = new AudioEncoder({
+            output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+            error: (err) => { failure = failure || err; }
+          });
+          audioEncoder.configure({ ...audioConfig, numberOfChannels: audioBuffer.numberOfChannels });
+        }
+
+        try {
+          // ---- AUDIO ----
+          if (audioEncoder && audioBuffer) {
+            const channels = audioBuffer.numberOfChannels;
+            const totalFrames = audioBuffer.length;
+            const framesPerChunk = sampleRate;
+
+            for (let offset = 0; offset < totalFrames; offset += framesPerChunk) {
+              const count = Math.min(framesPerChunk, totalFrames - offset);
+              const planarData = new Float32Array(count * channels);
+              for (let c = 0; c < channels; c++) {
+                planarData.set(audioBuffer.getChannelData(c).subarray(offset, offset + count), c * count);
+              }
+
+              const audioData = new AudioData({
+                format: 'f32-planar',
+                sampleRate: sampleRate,
+                numberOfFrames: count,
+                numberOfChannels: channels,
+                timestamp: Math.round((offset / sampleRate) * 1000000),
+                data: planarData
+              });
+              audioEncoder.encode(audioData);
+              audioData.close();
+
+              await waitForEncoder(audioEncoder, 8);
+              if (failure) throw failure;
+            }
+            await audioEncoder.flush();
+            if (failure) throw failure;
+          }
+          setExportProgress(25);
+
+          // ---- VIDEO ----
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d', { alpha: false });
+
+          const totalVideoFrames = Math.max(1, Math.round(totalSecs * fps));
+          let currentFrame = 0;
+
+          for (let i = 0; i < playbackOrder.length; i++) {
+            const clip = clips.find(c => c.id === playbackOrder[i]);
+            if (!clip || !clip.url) continue;
+
+            const video = await loadExportVideo(clip);
+            const clipFrames = Math.max(1, Math.round((clip.endTime - clip.startTime) * fps));
+
+            for (let f = 0; f < clipFrames; f++) {
+              // Aim at the middle of the frame. Seeking exactly onto a frame
+              // border lands on the previous picture often enough that roughly
+              // every second exported frame came out as a duplicate.
+              await seekExportVideo(video, clip.startTime + ((f + 0.5) / fps));
+              drawExportFrame(ctx, video, i, width, height);
+
+              const videoFrame = new VideoFrame(canvas, {
+                timestamp: Math.round(currentFrame * 1000000 / fps),
+                duration: Math.round(1000000 / fps)
+              });
+              // A keyframe every two seconds keeps the finished file seekable.
+              videoEncoder.encode(videoFrame, { keyFrame: currentFrame % (fps * 2) === 0 });
+              videoFrame.close();
+
+              await waitForEncoder(videoEncoder, 8);
+              if (failure) throw failure;
+
+              currentFrame++;
+              setExportProgress(25 + Math.min(74, Math.floor((currentFrame / totalVideoFrames) * 74)));
+            }
+
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+          }
+
+          // ---- FINALIZE ----
+          await videoEncoder.flush();
+          if (failure) throw failure;
+          muxer.finalize();
+
+          const { buffer } = muxer.target;
+          if (!buffer || buffer.byteLength === 0) {
+            throw new Error('The encoder returned an empty file.');
+          }
+          downloadBlob(new Blob([buffer], { type: 'video/mp4' }), 'Luced_AI_Ranked_Video.mp4');
+          setExportProgress(100);
+          reportSilentClips(audio && audio.silentClips);
+        } finally {
+          try { if (videoEncoder.state !== 'closed') videoEncoder.close(); } catch (err) {}
+          try { if (audioEncoder && audioEncoder.state !== 'closed') audioEncoder.close(); } catch (err) {}
+        }
+      };
+
+      // Fallback for browsers without WebCodecs: record the canvas in real time.
+      const exportWithMediaRecorder = async (validClips, totalSecs) => {
+        if (typeof window.MediaRecorder === 'undefined') {
+          throw new Error('This browser can neither encode with WebCodecs nor record with MediaRecorder. Please use Chrome or Edge.');
+        }
+
+        const fps = 30;
+        const width = 1080;
+        const height = 1920;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        drawExportFrame(ctx, null, -1, width, height);
+
+        const stream = canvas.captureStream(fps);
+
+        setExportProgress(5);
+        const audio = await renderExportAudio(validClips, totalSecs, 44100);
+        const audioBuffer = audio && audio.buffer;
+        let audioCtx = null;
+        let audioSource = null;
+        if (audioBuffer) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const destination = audioCtx.createMediaStreamDestination();
+          audioSource = audioCtx.createBufferSource();
+          audioSource.buffer = audioBuffer;
+          audioSource.connect(destination);
+          destination.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+        }
+
+        const types = [
+          'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+          'video/mp4',
+          'video/webm;codecs=vp9,opus',
+          'video/webm'
+        ];
+        const mimeType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+        const recorder = new MediaRecorder(stream, mimeType
+          ? { mimeType, videoBitsPerSecond: 5000000 }
+          : { videoBitsPerSecond: 5000000 });
+
+        const parts = [];
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size) parts.push(e.data); };
+        const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+
+        // Load every clip up front: a stall mid-recording would desync the audio.
+        const loaded = [];
+        for (const clip of validClips) {
+          loaded.push({ clip, video: await loadExportVideo(clip) });
+        }
+        setExportProgress(20);
+
+        try {
+          recorder.start();
+          if (audioCtx && audioSource) {
+            try { await audioCtx.resume(); } catch (err) {}
+            audioSource.start();
+          }
+
+          let elapsed = 0;
+          for (const { clip, video } of loaded) {
+            const orderIdx = playbackOrder.findIndex(id => id === clip.id);
+            const clipDur = Math.max(0, clip.endTime - clip.startTime);
+            await seekExportVideo(video, clip.startTime);
+            try { await video.play(); } catch (err) {}
+
+            await new Promise(resolve => {
+              const tick = () => {
+                drawExportFrame(ctx, video, orderIdx, width, height);
+                const played = Math.max(0, video.currentTime - clip.startTime);
+                setExportProgress(20 + Math.min(78, Math.floor(((elapsed + played) / totalSecs) * 78)));
+                if (video.currentTime >= clip.endTime - 0.02 || video.ended) {
+                  video.pause();
+                  resolve();
+                } else {
+                  requestAnimationFrame(tick);
+                }
+              };
+              requestAnimationFrame(tick);
+            });
+            elapsed += clipDur;
+          }
+        } finally {
+          if (recorder.state !== 'inactive') recorder.stop();
+        }
+
+        await recordingDone;
+        if (audioCtx) {
+          try { await audioCtx.close(); } catch (err) {}
+        }
+
+        const type = recorder.mimeType || mimeType || 'video/webm';
+        const blob = new Blob(parts, { type });
+        if (blob.size === 0) {
+          throw new Error('The recorder returned an empty file.');
+        }
+        const extension = type.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
+        downloadBlob(blob, `Luced_AI_Ranked_Video.${extension}`);
+        setExportProgress(100);
+        reportSilentClips(audio && audio.silentClips);
+      };
+
+      const handleGenerateVideo = async () => {
+        const validClips = playbackOrder.map(id => clips.find(c => c.id === id)).filter(c => c && c.url);
+        if (validClips.length === 0) {
+          alert("Please upload at least 1 video clip to export!");
+          return;
+        }
+
+        const totalSecs = validClips.reduce((acc, c) => acc + Math.max(0, c.endTime - c.startTime), 0);
+        if (totalSecs <= 0) {
+          alert("The selected clips have no length. Check the start and end times.");
+          return;
+        }
+
+        stopAllAudioAndVideo();
+        setIsGenerating(true);
+        setExportProgress(1);
+        exportFont.current = readPreviewFont();
+        exportTitle.current = readTitleStyle();
+        // Clip names and the watermark both carry tracking-wide, so one read
+        // covers them; whichever of the two is on screen answers for both.
+        const wide = readTracking('.tracking-wide', 0.025);
+        exportTracking.current = {
+          title: readTracking('h2', -0.025),
+          rank: readTracking('.rank-number-text', -0.05),
+          label: wide,
+          watermark: wide
+        };
+
+        try {
+          const hasWebCodecs = typeof window.VideoEncoder !== 'undefined'
+            && typeof window.VideoFrame !== 'undefined';
+          // No AAC encoder means the fast path could only ever produce a mute
+          // MP4. The recorder is slower but brings its own sound, so it wins.
+          const audioConfig = hasWebCodecs ? await pickAudioConfig(44100, 2) : null;
+
+          if (hasWebCodecs && audioConfig && await ensureMuxer()) {
+            await exportWithWebCodecs(validClips, totalSecs, audioConfig);
+          } else {
+            await exportWithMediaRecorder(validClips, totalSecs);
+          }
+        } catch (err) {
+          console.error("Export engine failed:", err);
+          alert("Export failed: " + (err && err.message ? err.message : err));
+        } finally {
+          setTimeout(() => setIsGenerating(false), 1500);
+        }
+      };
+
+      const renderFormattedTitle = (isInteractive = false) => {
+        if (!mainTitle.trim()) {
+          return isInteractive ? <span className="text-slate-600 italic">Enter title above...</span> : null;
+        }
+
+        const lines = mainTitle.split('\n');
+        let globalWordCounter = 0;
+
+        return lines.map((line, lineIdx) => {
+          const words = line.split(' ');
+          return (
+            <div key={lineIdx} className="block leading-tight">
+              {words.map((word, wordIdx) => {
+                const currentIdx = globalWordCounter++;
+                const wordColor = wordColors[currentIdx] || '#FFFFFF';
+
+                if (isInteractive) {
+                  return (
+                    <button
+                      key={wordIdx}
+                      type="button"
+                      onClick={() => toggleWordColor(currentIdx)}
+                      style={{ color: wordColor }}
+                      className="inline-block px-1 py-0.5 m-0.5 rounded border border-slate-700 bg-slate-900 font-black hover:border-emerald-500 transition cursor-pointer"
+                      title="Click to change color"
+                    >
+                      {word || ' '}
+                    </button>
+                  );
+                }
+
+                return (
+                  <span key={wordIdx} style={{ color: wordColor }} className="font-extrabold inline-block mr-1.5 uppercase">
+                    {word}
+                  </span>
+                );
+              })}
+            </div>
+          );
+        });
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+          <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-xl shadow-lg shadow-emerald-500/20">
+                <Icon name="film" className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="font-extrabold text-xl tracking-wider text-white">
+                Luced AI
+              </h1>
+            </div>
+          </header>
+
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1800px] mx-auto w-full">
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* BOX 1: TITLE */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-base uppercase tracking-wider">
+                    <Icon name="type" className="w-5 h-5" /> Title
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-medium">Main Title Text</label>
+                    <textarea 
+                      value={mainTitle}
+                      onChange={(e) => setMainTitle(e.target.value)}
+                      rows={2}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-base text-slate-100 font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition placeholder:text-slate-600"
+                      placeholder="Enter your title here..."
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400 font-medium">Active Color:</span>
+                      <input 
+                        type="color"
+                        value={selectedColor}
+                        onChange={(e) => setSelectedColor(e.target.value)}
+                        className="w-8 h-8 bg-transparent border-0 cursor-pointer rounded"
+                      />
+                      <div className="flex gap-1.5 ml-1">
+                        {['#5EE0B3', '#00FF66', '#FF2E63', '#FFD700', '#00F0FF', '#FFFFFF'].map((color) => (
+                          <button 
+                            key={color}
+                            type="button"
+                            onClick={() => setSelectedColor(color)}
+                            style={{ backgroundColor: color }}
+                            className={`w-6 h-6 rounded-full border transition hover:scale-110 ${
+                              selectedColor === color ? 'border-white ring-2 ring-emerald-400' : 'border-white/20'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <span className="text-[11px] text-slate-400">Click any word below to apply active color</span>
+                  </div>
+
+                  {mainTitle.trim().length > 0 && (
+                    <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                      <div className="text-xs font-medium text-slate-400 mb-2">Click word to color/uncolor:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {renderFormattedTitle(true)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* BOX 2: CLIP */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-base uppercase tracking-wider">
+                    <Icon name="video" className="w-5 h-5" /> Clip
+                  </div>
+
+                  {/* BULK UPLOAD BUTTON */}
+                  <label className="px-3 py-1.5 bg-emerald-950 text-emerald-400 hover:bg-emerald-900 border border-emerald-800/50 rounded-lg text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition">
+                    <Icon name="upload" className="w-3.5 h-3.5" /> Bulk Upload (Up to 5)
+                    <input 
+                      type="file" 
+                      accept="video/*" 
+                      multiple 
+                      onChange={handleBulkUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  {clips.map((clip) => {
+                    const hasClip = Boolean(clip.url);
+
+                    return (
+                      <div key={clip.id} className="p-3.5 rounded-xl border bg-slate-950/60 border-slate-800/80 hover:border-slate-700 space-y-3">
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 w-full md:w-auto flex-1">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black flex items-center justify-center text-xs flex-shrink-0">
+                              #{clip.rank}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1">
+                              <input 
+                                type="text"
+                                value={clip.label}
+                                onChange={(e) => updateClip(clip.id, 'label', e.target.value)}
+                                placeholder="Clip Name / Title"
+                                className="bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 placeholder:text-slate-600"
+                              />
+
+                              {!hasClip && (
+                                <label className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded cursor-pointer border border-slate-700 flex items-center justify-center gap-1 whitespace-nowrap">
+                                  <Icon name="upload" className="w-3.5 h-3.5 text-emerald-400" /> Upload
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    onChange={(e) => handleFileUpload(clip.id, e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+
+                          {hasClip && (
+                            <div className="flex items-center justify-end">
+                              <button 
+                                onClick={() => requestClearClip(clip.id)}
+                                className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900 border border-rose-800/50 text-rose-300 rounded text-xs flex items-center gap-1 font-semibold transition"
+                              >
+                                <Icon name="trash-2" className="w-3 h-3" /> Clear Box
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Numeric Start/End Cuts */}
+                        {hasClip && (
+                          <div className="pt-2 border-t border-slate-900 grid grid-cols-2 md:grid-cols-3 gap-3 items-center bg-slate-900/60 p-2.5 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold text-slate-400">Start (s):</span>
+                              <input 
+                                type="number" 
+                                step="0.1"
+                                min="0"
+                                max={clip.endTime - 0.1}
+                                value={clip.startTime} 
+                                onChange={(e) => updateClip(clip.id, 'startTime', Math.max(0, Math.min(Number(e.target.value), clip.endTime - 0.1)))}
+                                className="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold text-slate-400">End (s):</span>
+                              <input 
+                                type="number" 
+                                step="0.1"
+                                min={clip.startTime + 0.1}
+                                max={clip.duration}
+                                value={clip.endTime} 
+                                onChange={(e) => updateClip(clip.id, 'endTime', Math.min(clip.duration, Math.max(Number(e.target.value), clip.startTime + 0.1)))}
+                                className="w-20 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+
+                            <div className="col-span-2 md:col-span-1 text-right text-[11px] font-semibold text-slate-400">
+                              Duration: <span className="text-white font-bold">{(clip.endTime - clip.startTime).toFixed(1)}s</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* BOX 3: ORDER */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-base uppercase tracking-wider">
+                    <Icon name="shuffle" className="w-5 h-5" /> Order
+                  </div>
+
+                  <button 
+                    onClick={shufflePlaybackOrder}
+                    className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 shadow transition"
+                  >
+                    <Icon name="shuffle" className="w-3.5 h-3.5" /> Auto-Shuffle Order
+                  </button>
+                </div>
+
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
+                  {playbackOrder.map((clipId, idx) => {
+                    const item = clips.find(c => c.id === clipId);
+                    if (!item) return null;
+                    const isCurrent = idx === currentOrderIndex;
+                    const isBeingDragged = draggedIndex === idx;
+
+                    return (
+                      <div 
+                        key={clipId}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, idx)}
+                        onDragOver={handleDragOver}
+                        onDragEnter={(e) => handleDragEnter(e, idx)}
+                        onDragEnd={handleDragEnd}
+                        className={`p-2.5 rounded-lg border text-xs flex items-center justify-between transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                          isCurrent 
+                            ? 'bg-emerald-950/40 border-emerald-500/60 text-white font-medium' 
+                            : 'bg-slate-900 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                        } ${isBeingDragged ? 'scale-[1.02] border-emerald-400 bg-emerald-950/60 shadow-lg' : ''}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-5 text-slate-500 font-mono text-center">[{idx + 1}]</span>
+                          <span className="px-2.5 py-1 bg-slate-800 text-emerald-400 font-extrabold text-sm rounded">
+                            Rank #{item.rank}
+                          </span>
+                          {isCurrent && (
+                            <span className="px-2 py-0.5 bg-emerald-500 text-slate-950 font-black text-[10px] rounded uppercase animate-pulse">
+                              PLAYING
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 text-slate-500 hover:text-slate-300">
+                          <Icon name="grip-vertical" className="w-4 h-4" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* BOX 4: WATERMARK MODULE */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-base uppercase tracking-wider border-b border-slate-800 pb-2">
+                  <Icon name="at-sign" className="w-5 h-5" /> Watermark
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-400 font-medium">Username</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-slate-500 font-bold text-sm">@</span>
+                      <input 
+                        type="text"
+                        value={watermarkUser}
+                        onChange={(e) => setWatermarkUser(e.target.value)}
+                        placeholder="yourusername (optional)"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-4 py-2 text-sm text-slate-100 font-bold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center text-xs">
+                      <label className="text-slate-400 font-medium">Transparency</label>
+                      <span className="text-emerald-400 font-mono font-bold">{watermarkTransparency}%</span>
+                    </div>
+                    
+                    <input 
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={watermarkTransparency}
+                      onChange={(e) => setWatermarkTransparency(Number(e.target.value))}
+                      className="w-full accent-emerald-500 bg-slate-950 rounded-lg cursor-pointer"
+                    />
+
+                    <div className="flex gap-2 pt-1">
+                      {[0, 25, 50, 75, 100].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setWatermarkTransparency(val)}
+                          className={`flex-1 py-1 rounded text-[11px] font-bold border transition ${
+                            watermarkTransparency === val ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          {val}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT PANEL: Live Mobile Preview Player */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-start space-y-4 sticky top-6 self-start">
+              <div className="text-center">
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/60 border border-emerald-800/40 px-3 py-1 rounded-full">
+                  Live Preview
+                </span>
+              </div>
+
+              <div className="relative w-[320px] h-[570px] bg-black p-0 shadow-2xl border-4 border-slate-800 flex flex-col overflow-hidden ring-1 ring-slate-700/50 rounded-xl">
+                <div className="relative w-full h-full bg-slate-950 overflow-hidden flex flex-col justify-between">
+                  
+                  {/* PLAYBACK VIDEOS */}
+                  {validClipsInfo.length > 0 ? (
+                    playbackOrder.map((id, idx) => {
+                      const c = clips.find(x => x.id === id);
+                      if (!c || !c.url) return null;
+                      
+                      const isCurrent = idx === currentOrderIndex;
+                      
+                      return (
+                        <video 
+                          key={`vid-${idx}`}
+                          ref={el => videoRefs.current[idx] = el}
+                          src={c.url}
+                          className={`absolute inset-0 w-full h-full object-cover transition-none ${isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                          onTimeUpdate={() => handleTimeUpdate(idx)}
+                          playsInline
+                          preload="auto"
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center text-slate-600 text-xs p-4 text-center">
+                      <Icon name="video" className="w-8 h-8 mb-2 opacity-40" />
+                      <span>Upload a clip in Box 2</span>
+                    </div>
+                  )}
+
+                  {/* OVERLAY 1: Main Title */}
+                  <div className="absolute top-0 left-0 w-full z-20 bg-black pt-5 pb-3 px-3 text-center border-b border-black min-h-[50px] flex items-center justify-center">
+                    <h2 className="text-[26px] font-black tracking-tight text-white leading-tight uppercase">
+                      {renderFormattedTitle(false)}
+                    </h2>
+                  </div>
+
+                  {/* OVERLAY 2: Persistent Ranks */}
+                  <div className="absolute top-[28%] left-3 z-20 flex flex-col gap-3 pointer-events-none">
+                    {[1, 2, 3, 4, 5].map((rankNum) => {
+                      const item = clips.find(c => c.rank === rankNum);
+                      const orderIdx = playbackOrder.findIndex(id => id === item?.id);
+                      
+                      const hasBeenShown = orderIdx !== -1 && orderIdx <= currentOrderIndex;
+                      
+                      const rankColors = { 1: '#FFD700', 2: '#C0C0C0', 3: '#CD7F32', 4: '#A0A0A0', 5: '#707070' };
+
+                      return (
+                        <div key={rankNum} className="flex items-center gap-3 h-8">
+                          <span 
+                            style={{ color: rankColors[rankNum] }} 
+                            className="rank-number-text text-xl tracking-tighter"
+                          >
+                            {rankNum}.
+                          </span>
+                          
+                          {hasBeenShown && item?.label && (
+                            <span className="clip-title-text text-xs tracking-wide">
+                              {item.label}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* OVERLAY 3: Bottom Right Watermark */}
+                  {watermarkUser.trim() && watermarkTransparency < 100 && (
+                    <div 
+                      style={{ opacity: 1 - (watermarkTransparency / 100) }}
+                      className="absolute bottom-4 right-4 z-20 font-black text-white text-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] tracking-wide pointer-events-none"
+                    >
+                      @{watermarkUser.trim()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SEGMENTED PROPORTIONAL SCRUBBER BAR */}
+              <div className="w-[320px] space-y-2">
+                <div className="relative w-full h-3 bg-slate-900 rounded-lg border border-slate-800 flex items-center overflow-hidden cursor-pointer">
+                  {validClipsInfo.length > 0 ? (
+                    validClipsInfo.map((c, i) => {
+                      const dur = Math.max(0, c.endTime - c.startTime);
+                      const pct = totalDuration > 0 ? (dur / totalDuration) * 100 : 0;
+                      
+                      return (
+                        <div 
+                          key={`seg-${c.id}`} 
+                          style={{ width: `${pct}%` }} 
+                          className="h-full border-r border-slate-950/80 relative"
+                        >
+                          <div className="w-full h-full bg-slate-800" />
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="w-full h-full bg-slate-800" />
+                  )}
+
+                  <div 
+                    style={{ width: `${totalDuration > 0 ? (globalTime / totalDuration) * 100 : 0}%` }}
+                    className="absolute top-0 left-0 bg-emerald-400 h-full shadow-[0_0_8px_#34D399] pointer-events-none transition-all duration-75"
+                  />
+
+                  <input 
+                    type="range"
+                    min="0"
+                    max={totalDuration || 1}
+                    step="0.1"
+                    value={globalTime}
+                    onChange={handleScrub}
+                    className="absolute inset-0 w-full opacity-0 cursor-pointer z-10"
+                  />
+                </div>
+
+                {/* MEDIA CONTROL DECK */}
+                <div className="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 flex items-center justify-between shadow-xl">
+                  <div className="flex items-center gap-1.5">
+                    <button 
+                      onClick={handlePrevClip}
+                      title="Previous Clip"
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+                    >
+                      <Icon name="rewind" className="w-4 h-4" />
+                    </button>
+
+                    <button 
+                      onClick={togglePlay}
+                      title={isPlaying ? "Pause" : "Play"}
+                      className="p-2.5 bg-emerald-500 text-slate-950 rounded-xl hover:bg-emerald-400 transition"
+                    >
+                      {isPlaying ? <Icon name="pause" className="w-4 h-4" /> : <Icon name="play" className="w-4 h-4 fill-slate-950" />}
+                    </button>
+
+                    <button 
+                      onClick={handleNextClip}
+                      title="Next Clip"
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+                    >
+                      <Icon name="fast-forward" className="w-4 h-4" />
+                    </button>
+
+                    <button 
+                      onClick={handleStopReset}
+                      title="Stop & Reset to Start"
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+                    >
+                      <Icon name="square" className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="text-xs font-mono font-bold text-slate-300 pr-2">
+                    <span className="text-white">{formatTime(globalTime)}</span>
+                    <span className="text-slate-500"> / </span>
+                    <span className="text-emerald-400">{formatTime(totalDuration)}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 pt-1">
+                  <button 
+                    onClick={handleGenerateVideo}
+                    disabled={isGenerating}
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-base rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Icon name="refresh-cw" className="w-5 h-5 animate-spin" /> Rendering MP4 ({exportProgress}%)
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="download" className="w-5 h-5" /> Export MP4 Video
+                      </>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={() => setShowResetModal(true)}
+                    className="w-full py-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition active:scale-[0.98]"
+                  >
+                    <Icon name="plus-circle" className="w-4 h-4 text-emerald-400" /> New Video
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CONFIRMATION MODAL FOR NEW VIDEO */}
+          {showResetModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-center gap-3 text-amber-400 pb-2">
+                  <Icon name="alert-triangle" className="w-6 h-6 flex-shrink-0" />
+                  <h3 className="font-bold text-white text-base">Start a New Video?</h3>
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowResetModal(false)}
+                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleResetProject}
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-rose-950/50"
+                  >
+                    Yes, Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CONFIRMATION MODAL FOR CLEARING A CLIP */}
+          {confirmAction && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95Duration-150">
+                <div className="flex items-center justify-center gap-3 text-amber-400 pb-2">
+                  <Icon name="alert-triangle" className="w-6 h-6 flex-shrink-0" />
+                  <h3 className="font-bold text-base text-white">Clear Clip Slot?</h3>
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button 
+                    onClick={() => setConfirmAction(null)}
+                    className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleConfirmAction}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-950/50"
+                  >
+                    Confirm`
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
