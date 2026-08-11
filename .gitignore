@@ -6,3 +6,7 @@
 # Windows-Beiwerk
 Thumbs.db
 desktop.ini
+
+# Fertige Videos. Der Browser legt einen Export auch schon mal direkt
+# im Projektordner ab, statt in Downloads.
+*.mp4
