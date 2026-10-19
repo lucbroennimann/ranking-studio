@@ -7,6 +7,16 @@
 Thumbs.db
 desktop.ini
 
+# Lokale Claude-Einstellungen (Rechte, Pfade auf diesem Rechner)
+.claude/settings.local.json
+
 # Fertige Videos. Der Browser legt einen Export auch schon mal direkt
 # im Projektordner ab, statt in Downloads.
 *.mp4
+
+# Schulstoff. Questle liest PDFs und gesicherte Fragensaetze nur lokal ein,
+# sie muessen nirgends hin. Das Repo hier ist oeffentlich - eine
+# Zusammenfassung aus dem Unterricht gehoert ebensowenig hinein wie die
+# Probe darueber.
+*.pdf
+*.questle.json
